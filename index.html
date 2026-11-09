@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
+  <!-- Configuración PWA para que iPhone la abra a pantalla completa como App Nativa -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Captiva LT" />
+  <meta name="theme-color" content="#020617" />
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2933/2933939.png" />
+
+  <title>Captiva LT 1.5 Turbo - Control</title>
+
+  <!-- Tailwind CSS + React 18 + Babel -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #020617;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    input, select, button {
+      font-size: 16px !important; /* Evita el zoom automático de Safari en iPhone */
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const MAINTENANCE_GOAL = 102000;
+    const MONTHLY_AVG_KM = 1145;
+    const FIXED_PARKING = 48.88;
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('nuevo');
+      const [records, setRecords] = useState(() => {
+        const saved = localStorage.getItem('captiva_records_v2');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      // Configuración de sincronización y API Key
+      const [scriptUrl, setScriptUrl] = useState(() => localStorage.getItem('captiva_script_url') || '');
+      const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('captiva_gemini_key') || '');
+      const [showSyncModal, setShowSyncModal] = useState(false);
+      const [isSyncing, setIsSyncing] = useState(false);
+      const [syncStatus, setSyncStatus] = useState('Listo');
+
+      // Estado del formulario y fotos
+      const [invoiceImg, setInvoiceImg] = useState(null);
+      const [dashImg, setDashImg] = useState(null);
+      const [isScanning, setIsScanning] = useState(false);
+      const [scanError, setScanError] = useState('');
+      const [editHighlight, setEditHighlight] = useState(false);
+
+      const [form, setForm] = useState({
+        fecha: new Date().toLocaleDateString('es-EC'),
+        odometro: '',
+        recorrido: '',
+        galones: '',
+        tipoGasolina: 'Súper',
+        subtotal: '',
+        iva: '',
+        costoTotal: '',
+        metodoPago: 'Tarjeta Primax',
+        facturaNo: '',
+        estacion: 'Primax / EESS',
+      });
+
+      // Referencias para Cámara y Galería por separado
+      const invGalleryRef = useRef(null);
+      const invCamRef = useRef(null);
+      const dashGalleryRef = useRef(null);
+      const dashCamRef = useRef(null);
+
+      // Guardar respaldo local
+      useEffect(() => {
+        localStorage.setItem('captiva_records_v2', JSON.stringify(records));
+      }, [records]);
+
+      // Consultar la base de Google Sheets al abrir, al cambiar de pestaña y al volver a la app
+      const fetchFromGoogleSheets = async () => {
+        if (!scriptUrl) return;
+        setIsSyncing(true);
+        setSyncStatus('Consultando Google Sheets...');
+        try {
+          const res = await fetch(scriptUrl + '?t=' + Date.now());
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setRecords(data);
+            setSyncStatus('Sincronizado con Google Sheets');
+          }
+        } catch (err) {
+          setSyncStatus('Usando copia local (Revisa URL Sync)');
+        } finally {
+          setIsSyncing(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchFromGoogleSheets();
+        const handleVisibility = () => {
+          if (document.visibilityState === 'visible') fetchFromGoogleSheets();
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+      }, [scriptUrl, activeTab]);
+
+      // Compresión automática de fotos de iPhone (HEIC/JPEG pesados -> JPEG ligero)
+      const compressImage = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_SIZE = 1200;
+              let width = img.width;
+              let height = img.height;
+              if (width > height && width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              } else if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+              resolve(dataUrl);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
+
+      const handleImageSelect = async (e, type) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const compressed = await compressImage(file);
+          if (type === 'invoice') setInvoiceImg(compressed);
+          else setDashImg(compressed);
+          setScanError('');
+        } catch (err) {
+          setScanError('No se pudo procesar la imagen. Intenta con otra captura.');
+        }
+      };
+
+      // Extracción con IA o activación directa del Paso 3 (Modo Edición)
+      const extractDataFromPhotos = async () => {
+        if (!invoiceImg && !dashImg) {
+          setScanError('Selecciona primero al menos una foto de Galería o Cámara.');
+          return;
+        }
+        setIsScanning(true);
+        setScanError('');
+
+        if (!geminiKey) {
+          setIsScanning(false);
+          setEditHighlight(true);
+          setScanError('Para lectura IA automática en GitHub Pages, coloca tu Gemini API Key en "Configurar Sync", o edita los campos directamente en el Paso 3 abajo.');
+          return;
+        }
+
+        try {
+          const parts = [
+            {
+              text: `Extrae los datos de estas imágenes (factura de gasolinera en Ecuador y/o tablero de Chevrolet Captiva). Devuelve SOLO un objeto JSON válido con estas claves exactas: {"fecha": "DD/MM/YYYY", "odometro": numero, "recorrido": numero, "galones": numero, "subtotal": numero, "iva": numero, "costoTotal": numero, "facturaNo": "texto", "estacion": "texto"}. Si un dato no aparece, pon "".`
+            }
+          ];
+
+          if (invoiceImg) {
+            parts.push({
+              inline_data: { mime_type: 'image/jpeg', data: invoiceImg.split(',')[1] }
+            });
+          }
+          if (dashImg) {
+            parts.push({
+              inline_data: { mime_type: 'image/jpeg', data: dashImg.split(',')[1] }
+            });
+          }
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts }] })
+            }
+          );
+
+          const result = await response.json();
+          const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+
+          if (!jsonMatch) throw new Error('Respuesta sin JSON');
+          const parsed = JSON.parse(jsonMatch[0]);
+
+          const lastOdo = records.length > 0 ? Number(records[0].odometro) : 0;
+          const newOdo = parsed.odometro ? Number(parsed.odometro) : '';
+          let calcTrip = parsed.recorrido ? Number(parsed.recorrido) : '';
+          if (lastOdo > 0 && newOdo > lastOdo && (!calcTrip || calcTrip > (newOdo - lastOdo) * 1.4)) {
+            calcTrip = Number((newOdo - lastOdo).toFixed(1));
+          }
+
+          setForm((prev) => ({
+            ...prev,
+            fecha: parsed.fecha || prev.fecha,
+            odometro: newOdo !== '' ? newOdo : prev.odometro,
+            recorrido: calcTrip !== '' ? calcTrip : prev.recorrido,
+            galones: parsed.galones || prev.galones,
+            subtotal: parsed.subtotal || prev.subtotal,
+            iva: parsed.iva || prev.iva,
+            costoTotal: parsed.costoTotal || prev.costoTotal,
+            facturaNo: parsed.facturaNo || prev.facturaNo,
+            estacion: parsed.estacion || prev.estacion,
+          }));
+          setEditHighlight(true);
+        } catch (err) {
+          setScanError('Revisa o corrige manualmente los datos en el Paso 3 antes de subir a Google Sheets.');
+          setEditHighlight(true);
+        } finally {
+          setIsScanning(false);
+        }
+      };
+
+      // Cálculos en vivo del Paso 3
+      const odoNum = parseFloat(form.odometro) || 0;
+      const tripNum = parseFloat(form.recorrido) || 0;
+      const galNum = parseFloat(form.galones) || 0;
+      const totalNum = parseFloat(form.costoTotal) || 0;
+
+      const rendimientoReal = galNum > 0 && tripNum > 0 ? (tripNum / galNum).toFixed(2) : '0.00';
+      const costoPorKm = tripNum > 0 && totalNum > 0 ? (totalNum / tripNum).toFixed(4) : '0.0000';
+      const precioGalon = galNum > 0 && totalNum > 0 ? (totalNum / galNum).toFixed(2) : '0.00';
+      const kmRestantesMant = odoNum > 0 ? Math.max(0, MAINTENANCE_GOAL - odoNum) : MAINTENANCE_GOAL;
+
+      const guardarYSubirASheets = async () => {
+        if (!odoNum || !galNum || !totalNum) {
+          alert('Por favor verifica que Odómetro, Galones y Costo Total tengan valores válidos en el Paso 3.');
+          return;
+        }
+
+        const nuevoRegistro = {
+          id: Date.now(),
+          fecha: form.fecha,
+          odometro: odoNum,
+          recorrido: tripNum,
+          galones: galNum,
+          tipoGasolina: form.tipoGasolina,
+          subtotal: parseFloat(form.subtotal) || Number((totalNum / 1.15).toFixed(2)),
+          iva: parseFloat(form.iva) || Number((totalNum - totalNum / 1.15).toFixed(2)),
+          costoTotal: totalNum,
+          precioGalon: parseFloat(precioGalon),
+          rendimiento: parseFloat(rendimientoReal),
+          costoKm: parseFloat(costoPorKm),
+          metodoPago: form.metodoPago,
+          kmMantenimiento: kmRestantesMant,
+          facturaNo: form.facturaNo || 'S/N',
+          estacion: form.estacion || 'Gasolinera',
+        };
+
+        const nuevosRegistros = [nuevoRegistro, ...records];
+        setRecords(nuevosRegistros);
+
+        if (scriptUrl) {
+          setIsSyncing(true);
+          setSyncStatus('Subiendo fila a Google Sheets...');
+          try {
+            await fetch(scriptUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(nuevoRegistro),
+            });
+            setSyncStatus('¡Guardado en Google Sheets!');
+            setTimeout(() => fetchFromGoogleSheets(), 1200);
+          } catch (e) {
+            setSyncStatus('Guardado local (Error de red con Sheets)');
+          } finally {
+            setIsSyncing(false);
+          }
+        }
+
+        // Limpiar formulario para siguiente tanqueo
+        setInvoiceImg(null);
+        setDashImg(null);
+        setEditHighlight(false);
+        setForm((prev) => ({
+          ...prev,
+          odometro: '',
+          recorrido: '',
+          galones: '',
+          subtotal: '',
+          iva: '',
+          costoTotal: '',
+          facturaNo: '',
+        }));
+        alert('✅ Registro guardado y enviado a la base de Google Sheets.');
+      };
+
+      const ultimoRegistro = records.length > 0 ? records[0] : null;
+
+      // Totales por método de pago y proyecciones para la vista de Reporte
+      const totalPrimax = records
+        .filter((r) => r.metodoPago === 'Tarjeta Primax')
+        .reduce((acc, r) => acc + Number(r.costoTotal || 0), 0);
+      const totalAnthony = records
+        .filter((r) => r.metodoPago === 'Tarjeta de Anthony')
+        .reduce((acc, r) => acc + Number(r.costoTotal || 0), 0);
+      const totalEfectivo = records
+        .filter((r) => r.metodoPago === 'Efectivo')
+        .reduce((acc, r) => acc + Number(r.costoTotal || 0), 0);
+
+      const costoKmPromedio =
+        records.length > 0
+          ? records.reduce((acc, r) => acc + Number(r.costoKm || 0), 0) / records.length
+          : 0.2065;
+      const gastoGasolinaMensualProyectado = costoKmPromedio * MONTHLY_AVG_KM;
+      const presupuestoOperativoTotal = gastoGasolinaMensualProyectado + FIXED_PARKING;
+
+      const codigoAppsScript = `function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);
+  var data = [];
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var r = rows[i];
+    data.push({
+      id: i,
+      fecha: r[0],
+      odometro: Number(r[1]),
+      recorrido: Number(r[2]),
+      galones: Number(r[3]),
+      tipoGasolina: r[4],
+      subtotal: Number(r[5]),
+      iva: Number(r[6]),
+      costoTotal: Number(r[7]),
+      precioGalon: Number(r[8]),
+      rendimiento: Number(r[9]),
+      costoKm: Number(r[10]),
+      metodoPago: r[11],
+      kmMantenimiento: Number(r[12]),
+      facturaNo: r[13]
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Fecha", "Odómetro Actual", "Recorrido (km)", "Galones", "Gasolina", "Subtotal ($)", "IVA ($)", "Costo Total ($)", "Precio/Gal ($)", "Rendimiento (km/gal)", "Costo/km ($)", "Método de Pago", "Km Próx. Mant.", "No. Factura"]);
+  }
+  var d = JSON.parse(e.postData.contents);
+  sheet.appendRow([d.fecha, d.odometro, d.recorrido, d.galones, d.tipoGasolina, d.subtotal, d.iva, d.costoTotal, d.precioGalon, d.rendimiento, d.costoKm, d.metodoPago, d.kmMantenimiento, d.facturaNo]);
+  return ContentService.createTextOutput(JSON.stringify({status: "ok"})).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+      return (
+        <div className="max-w-md mx-auto min-h-screen pb-24 px-3 pt-3 select-none">
+          {/* CABECERA */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 mb-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xl shadow">
+                  ⛽
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-bold text-sm tracking-wide text-white">CAPTIVA LT 1.5 TURBO</h1>
+                    <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded">
+                      GTF2348
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {syncStatus} • Meta: <span className="text-emerald-400 font-semibold">102,000 km</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <button
+                onClick={fetchFromGoogleSheets}
+                className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl py-2 text-xs font-semibold transition"
+              >
+                <span>🔄</span> {isSyncing ? 'Consultando...' : 'Refrescar Base'}
+              </button>
+              <button
+                onClick={() => setShowSyncModal(true)}
+                className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl py-2 text-xs font-semibold transition"
+              >
+                <span>⚙️</span> Configurar Sync
+              </button>
+            </div>
+          </div>
+
+          {/* TARJETA FIJA DEL ÚLTIMO REGISTRO EN LA BASE DE GOOGLE SHEETS */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/50 border border-cyan-500/30 rounded-2xl p-3.5 mb-3 shadow">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
+                📌 Último Registro en Base (Google Sheets)
+              </span>
+              {ultimoRegistro && (
+                <span className="text-[11px] text-slate-400 font-medium">{ultimoRegistro.fecha}</span>
+              )}
+            </div>
+            {ultimoRegistro ? (
+              <div className="grid grid-cols-4 gap-2 text-center bg-slate-950/60 rounded-xl p-2 border border-slate-800/80">
+                <div>
+                  <p className="text-[10px] text-slate-400">Odómetro</p>
+                  <p className="text-xs font-bold text-white">{Number(ultimoRegistro.odometro).toLocaleString()} km</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">Total / Gal</p>
+                  <p className="text-xs font-bold text-emerald-400">${Number(ultimoRegistro.costoTotal).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">Rendimiento</p>
+                  <p className="text-xs font-bold text-cyan-300">{ultimoRegistro.rendimiento} km/g</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">Pago</p>
+                  <p className="text-[10px] font-semibold text-amber-300 truncate">{ultimoRegistro.metodoPago}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">
+                Sin registros cargados aún. Sube tu primera tanqueada o conecta el Apps Script de tu Google Sheet.
+              </p>
+            )}
+          </div>
+
+          {/* NAVEGACIÓN DE PESTAÑAS */}
+          <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 mb-3">
+            <button
+              onClick={() => setActiveTab('nuevo')}
+              className={`py-2 rounded-lg text-xs font-bold transition ${
+                activeTab === 'nuevo' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
+              }`}
+            >
+              ➕ Nuevo Tanqueo
+            </button>
+            <button
+              onClick={() => setActiveTab('reporte')}
+              className={`py-2 rounded-lg text-xs font-bold transition ${
+                activeTab === 'reporte' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
+              }`}
+            >
+              📊 Reporte Mensual
+            </button>
+            <button
+              onClick={() => setActiveTab('sheets')}
+              className={`py-2 rounded-lg text-xs font-bold transition ${
+                activeTab === 'sheets' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
+              }`}
+            >
+              🗂️ Base ({records.length})
+            </button>
+          </div>
+
+          {/* PESTAÑA 1: NUEVO TANQUEO */}
+          {activeTab === 'nuevo' && (
+            <div className="space-y-3">
+              {/* PASO 1: FOTOS */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                  Paso 1: Captura Factura y Tablero
+                </h2>
+
+                {/* Factura */}
+                <div className="border border-dashed border-slate-700 rounded-xl p-3 text-center bg-slate-950/40">
+                  <p className="text-xs font-semibold text-slate-300 mb-2">🧾 Foto de la Factura</p>
+                  {invoiceImg && (
+                    <div className="mb-2">
+                      <img src={invoiceImg} alt="Factura" className="h-28 mx-auto rounded-lg object-cover border border-slate-700" />
+                      <span className="text-[11px] text-emerald-400 font-medium">✓ Factura lista</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" ref={invGalleryRef} className="hidden" onChange={(e) => handleImageSelect(e, 'invoice')} />
+                  <input type="file" accept="image/*" capture="environment" ref={invCamRef} className="hidden" onChange={(e) => handleImageSelect(e, 'invoice')} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => invGalleryRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 py-2 rounded-lg text-xs font-semibold">
+                      🖼️ Galería
+                    </button>
+                    <button onClick={() => invCamRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white py-2 rounded-lg text-xs font-semibold">
+                      📷 Cámara
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tablero */}
+                <div className="border border-dashed border-slate-700 rounded-xl p-3 text-center bg-slate-950/40">
+                  <p className="text-xs font-semibold text-slate-300 mb-2">⏲️ Foto del Odómetro (Tablero)</p>
+                  {dashImg && (
+                    <div className="mb-2">
+                      <img src={dashImg} alt="Tablero" className="h-28 mx-auto rounded-lg object-cover border border-slate-700" />
+                      <span className="text-[11px] text-emerald-400 font-medium">✓ Tablero listo</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" ref={dashGalleryRef} className="hidden" onChange={(e) => handleImageSelect(e, 'dash')} />
+                  <input type="file" accept="image/*" capture="environment" ref={dashCamRef} className="hidden" onChange={(e) => handleImageSelect(e, 'dash')} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => dashGalleryRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 py-2 rounded-lg text-xs font-semibold">
+                      🖼️ Galería
+                    </button>
+                    <button onClick={() => dashCamRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white py-2 rounded-lg text-xs font-semibold">
+                      📷 Cámara
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={extractDataFromPhotos}
+                  disabled={isScanning}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs shadow-lg"
+                >
+                  {isScanning ? '⏳ Extrayendo datos con IA...' : '✨ Extraer Datos de las Fotos Automáticamente'}
+                </button>
+
+                {scanError && (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+                    {scanError}
+                  </div>
+                )}
+              </div>
+
+              {/* PASO 2: MÉTODO DE PAGO */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
+                  Paso 2: Método de Pago
+                </h2>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Tarjeta Primax', 'Tarjeta de Anthony', 'Efectivo'].map((metodo) => (
+                    <button
+                      key={metodo}
+                      onClick={() => setForm({ ...form, metodoPago: metodo })}
+                      className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition ${
+                        form.metodoPago === metodo
+                          ? 'bg-cyan-600/30 border-cyan-400 text-white shadow'
+                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {metodo === 'Efectivo' ? '💵 ' : '💳 '}
+                      {metodo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PASO 3: REVISIÓN Y EDICIÓN ANTES DE SUBIR A GOOGLE SHEETS */}
+              <div
+                className={`bg-slate-900 rounded-2xl p-3.5 border transition ${
+                  editHighlight ? 'border-amber-400 shadow-lg shadow-amber-500/10' : 'border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2.5">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                    Paso 3: Revisar / Editar Datos y Subir
+                  </h2>
+                  <span className="text-[10px] text-slate-400">100% Editable</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-[11px] text-slate-400">Fecha</label>
+                    <input
+                      type="text"
+                      value={form.fecha}
+                      onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400">Odómetro Actual (km)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej. 93543"
+                      value={form.odometro}
+                      onChange={(e) => setForm({ ...form, odometro: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400">Recorrido / Trip (km)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej. 284.8"
+                      value={form.recorrido}
+                      onChange={(e) => setForm({ ...form, recorrido: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400">Galones Comprados</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej. 10.450"
+                      value={form.galones}
+                      onChange={(e) => setForm({ ...form, galones: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400">Costo Total Factura ($)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej. 58.82"
+                      value={form.costoTotal}
+                      onChange={(e) => setForm({ ...form, costoTotal: e.target.value })}
+                      className="w-full bg-slate-950 border border-emerald-600/60 rounded-lg px-2.5 py-1.5 text-emerald-400 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400">Tipo de Gasolina</label>
+                    <select
+                      value={form.tipoGasolina}
+                      onChange={(e) => setForm({ ...form, tipoGasolina: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+                    >
+                      <option value="Súper">Súper</option>
+                      <option value="Extra / Ecopaís">Extra / Ecopaís</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Vista previa de cálculos automáticos */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-950 rounded-xl p-2.5 mt-3 border border-slate-800 text-center">
+                  <div>
+                    <p className="text-[10px] text-slate-400">Rendimiento</p>
+                    <p className="text-xs font-bold text-cyan-400">{rendimientoReal} km/gal</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Costo / km</p>
+                    <p className="text-xs font-bold text-white">${costoPorKm}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Precio / Gal</p>
+                    <p className="text-xs font-bold text-amber-300">${precioGalon}</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={guardarYSubirASheets}
+                  className="w-full mt-3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg"
+                >
+                  ✅ Confirmar Datos y Subir a Google Sheets
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PESTAÑA 2: REPORTE MENSUAL Y PRESUPUESTO */}
+          {activeTab === 'reporte' && (
+            <div className="space-y-3">
+              {/* Gasto por Método de Pago */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
+                  💳 Gasto Acumulado por Método de Pago
+                </h2>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                    <p className="text-[10px] text-slate-400">Tarjeta Primax</p>
+                    <p className="text-sm font-bold text-cyan-400 mt-1">${totalPrimax.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                    <p className="text-[10px] text-slate-400">Tarjeta Anthony</p>
+                    <p className="text-sm font-bold text-amber-400 mt-1">${totalAnthony.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                    <p className="text-[10px] text-slate-400">Efectivo</p>
+                    <p className="text-sm font-bold text-emerald-400 mt-1">${totalEfectivo.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Presupuesto Operativo Mensual (Gasolina + Parqueo $48.88) */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                  📅 Presupuesto Mensual Proyectado
+                </h2>
+                <div className="flex justify-between text-xs py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Gasolina Súper proyectada (1,145 km/mes)</span>
+                  <span className="font-bold text-white">${gastoGasolinaMensualProyectado.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Parqueo mensual fijo</span>
+                  <span className="font-bold text-white">${FIXED_PARKING.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-1">
+                  <span className="font-bold text-cyan-300">Total Mensual Estimado</span>
+                  <span className="font-extrabold text-emerald-400">${presupuestoOperativoTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Control de Mantenimiento 102,000 km */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
+                  🛠️ Próximo Mantenimiento (Meta: 102,000 km)
+                </h2>
+                <p className="text-xs text-slate-300">
+                  Restan{' '}
+                  <span className="font-bold text-white">
+                    {ultimoRegistro
+                      ? Math.max(0, MAINTENANCE_GOAL - Number(ultimoRegistro.odometro)).toLocaleString()
+                      : '8,457'}{' '}
+                    km
+                  </span>{' '}
+                  para el servicio preventivo en talleres.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* PESTAÑA 3: BASE DE GOOGLE SHEETS */}
+          {activeTab === 'sheets' && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                  Registros en la Base ({records.length})
+                </h2>
+                {records.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Deseas limpiar la vista local de registros?')) setRecords([]);
+                    }}
+                    className="text-[11px] text-rose-400 underline"
+                  >
+                    Limpiar lista local
+                  </button>
+                )}
+              </div>
+
+              {records.length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center">No hay registros almacenados todavía.</p>
+              ) : (
+                <div className="space-y-2">
+                  {records.map((r, i) => (
+                    <div key={r.id || i} className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs">
+                      <div className="flex justify-between font-bold text-white mb-1">
+                        <span>{r.fecha} • {Number(r.odometro).toLocaleString()} km</span>
+                        <span className="text-emerald-400">${Number(r.costoTotal).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px] text-slate-400">
+                        <span>Trip: {r.recorrido} km | {r.galones} gal ({r.rendimiento} km/gal)</span>
+                        <span className="text-amber-300 font-semibold">{r.metodoPago}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MODAL DE CONFIGURACIÓN SYNC Y GEMINI KEY */}
+          {showSyncModal && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
+                <h3 className="font-bold text-sm text-cyan-400">⚙️ Conexión con Google Sheets e IA</h3>
+
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">
+                    1. URL de tu Apps Script (Para leer y guardar en tu Google Sheet):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    value={scriptUrl}
+                    onChange={(e) => {
+                      setScriptUrl(e.target.value);
+                      localStorage.setItem('captiva_script_url', e.target.value);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">
+                    2. Gemini API Key (Opcional, para lectura automática de fotos en GitHub Pages):
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={geminiKey}
+                    onChange={(e) => {
+                      setGeminiKey(e.target.value);
+                      localStorage.setItem('captiva_gemini_key', e.target.value);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <p className="text-[11px] text-slate-400 mb-1">
+                    Código para pegar en tu Google Sheet (Extensiones &gt; Apps Script &gt; Implementar &gt; Aplicación web &gt; Cualquier persona):
+                  </p>
+                  <pre className="bg-slate-950 p-2 rounded-lg text-[10px] text-cyan-300 overflow-x-auto border border-slate-800">
+                    {codigoAppsScript}
+                  </pre>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowSyncModal(false);
+                    fetchFromGoogleSheets();
+                  }}
+                  className="w-full py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-xs"
+                >
+                  Guardar y Cerrar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
