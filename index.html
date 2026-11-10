@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#020617" />
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2933/2933939.png" />
 
-  <title>Captiva LT 1.5 Turbo - Control</title>
+  <title>Captiva LT 1.5 Turbo - Control & Inventario</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -42,6 +42,93 @@
     const MONTHLY_AVG_KM = 1145;
     const FIXED_PARKING = 48.88;
 
+    const DEFAULT_PARTS = [
+      {
+        id: 'llantas-4',
+        nombre: 'Juego de 4 Llantas',
+        categoria: 'Neumáticos y Suspensión',
+        especificacion: 'Medida 215/60 R17 (Presión 32-35 PSI)',
+        estado: 'Urgente',
+        fechaUltimoCambio: 'Pendiente de cambio',
+        kmUltimoCambio: 50000,
+        kmProximoCambio: 94499,
+        costoEstimado: 420.00,
+        notas: 'Cambiar las 4 llantas + alineación y balanceo'
+      },
+      {
+        id: 'plumas-limpia',
+        nombre: 'Plumas Limpiaparabrisas (Juego)',
+        categoria: 'Visibilidad y Exterior',
+        especificacion: 'Piloto 24" (600mm) • Copiloto 16" (400mm) • Trasera 10" (J-Hook)',
+        estado: 'Al día',
+        fechaUltimoCambio: '26/10/2026',
+        kmUltimoCambio: 93800,
+        kmProximoCambio: 108800,
+        costoEstimado: 28.00,
+        notas: 'Cambiadas hace 2 semanas'
+      },
+      {
+        id: 'aceite-motor',
+        nombre: 'Aceite Sintético 5W-30 + Filtro',
+        categoria: 'Motor 1.5 Turbo',
+        especificacion: 'Sintético 5W-30 DEXOS1 Gen 2/3 (Lubricación Turbo)',
+        estado: 'Al día',
+        fechaUltimoCambio: '01/09/2026',
+        kmUltimoCambio: 92541,
+        kmProximoCambio: 102000,
+        costoEstimado: 85.00,
+        notas: 'Servicio en talleres INDUCORP'
+      },
+      {
+        id: 'pastillas-freno',
+        nombre: 'Pastillas de Freno (Delanteras y Post.)',
+        categoria: 'Frenos y Seguridad',
+        especificacion: 'Inspección y limpieza cada 10,000 km',
+        estado: 'Al día',
+        fechaUltimoCambio: '01/09/2026',
+        kmUltimoCambio: 92541,
+        kmProximoCambio: 102000,
+        costoEstimado: 95.00,
+        notas: 'Revisadas en último mantenimiento general'
+      },
+      {
+        id: 'filtros-aire-cabina',
+        nombre: 'Filtro de Aire Motor + Filtro Cabina A/C',
+        categoria: 'Climatización y Admisión',
+        especificacion: 'Cambio cada 10,000 km por clima de Guayaquil',
+        estado: 'Al día',
+        fechaUltimoCambio: '01/09/2026',
+        kmUltimoCambio: 92541,
+        kmProximoCambio: 102000,
+        costoEstimado: 45.00,
+        notas: 'Esencial para enfriamiento del A/C y cuidado del turbo'
+      },
+      {
+        id: 'bujias-iridio',
+        nombre: 'Juego de 4 Bujías (Motor Turbo)',
+        categoria: 'Encendido',
+        especificacion: 'Bujías de Iridio (Mantenimiento Mayor 100k)',
+        estado: 'Próximo',
+        fechaUltimoCambio: '01/09/2026',
+        kmUltimoCambio: 82000,
+        kmProximoCambio: 102000,
+        costoEstimado: 75.00,
+        notas: 'Revisar/reemplazar en el mantenimiento de 102,000 km'
+      },
+      {
+        id: 'bateria-12v',
+        nombre: 'Batería 12V',
+        categoria: 'Sistema Eléctrico',
+        especificacion: ' Revisión de voltaje y bornes',
+        estado: 'Al día',
+        fechaUltimoCambio: '01/09/2026',
+        kmUltimoCambio: 92541,
+        kmProximoCambio: 112000,
+        costoEstimado: 135.00,
+        notas: 'Operativa sin novedades'
+      }
+    ];
+
     const toNum = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -52,8 +139,28 @@
     function App() {
       const [activeTab, setActiveTab] = useState('nuevo');
       const [records, setRecords] = useState(() => {
-        const saved = localStorage.getItem('captiva_records_v3');
+        const saved = localStorage.getItem('captiva_records_v4');
         return saved ? JSON.parse(saved) : [];
+      });
+
+      const [parts, setParts] = useState(() => {
+        const saved = localStorage.getItem('captiva_parts_v1');
+        return saved ? JSON.parse(saved) : DEFAULT_PARTS;
+      });
+
+      const [filterPartStatus, setFilterPartStatus] = useState('Todas');
+      const [showAddPartModal, setShowAddPartModal] = useState(false);
+      const [editingPart, setEditingPart] = useState(null);
+      const [partForm, setPartForm] = useState({
+        nombre: '',
+        categoria: 'Mantenimiento General',
+        especificacion: '',
+        estado: 'Al día',
+        fechaUltimoCambio: new Date().toLocaleDateString('es-EC'),
+        kmUltimoCambio: 94499,
+        kmProximoCambio: 104499,
+        costoEstimado: '',
+        notas: ''
       });
 
       const [scriptUrl, setScriptUrl] = useState(() => localStorage.getItem('captiva_script_url') || '');
@@ -89,8 +196,12 @@
       const dashCamRef = useRef(null);
 
       useEffect(() => {
-        localStorage.setItem('captiva_records_v3', JSON.stringify(records));
+        localStorage.setItem('captiva_records_v4', JSON.stringify(records));
       }, [records]);
+
+      useEffect(() => {
+        localStorage.setItem('captiva_parts_v1', JSON.stringify(parts));
+      }, [parts]);
 
       const fetchFromGoogleSheets = async () => {
         if (!scriptUrl) return;
@@ -99,8 +210,11 @@
         try {
           const res = await fetch(scriptUrl + '?t=' + Date.now());
           const rawData = await res.json();
-          if (Array.isArray(rawData)) {
-            const normalized = rawData.map((r, idx) => {
+          const fuelRows = Array.isArray(rawData) ? rawData : (rawData.fuel || []);
+          const sheetParts = rawData.parts || [];
+
+          if (Array.isArray(fuelRows)) {
+            const normalized = fuelRows.map((r, idx) => {
               const odo = toNum(r.odometro);
               const trip = toNum(r.recorrido);
               const gal = toNum(r.galones);
@@ -126,10 +240,13 @@
               };
             });
             setRecords(normalized);
-            setSyncStatus('Sincronizado con Google Sheets');
           }
+          if (Array.isArray(sheetParts) && sheetParts.length > 0) {
+            setParts(sheetParts);
+          }
+          setSyncStatus('Sincronizado con Google Sheets');
         } catch (err) {
-          setSyncStatus('Usando copia local (Verifica URL Sync)');
+          setSyncStatus('Usando copia local');
         } finally {
           setIsSyncing(false);
         }
@@ -143,6 +260,80 @@
         document.addEventListener('visibilitychange', handleVisibility);
         return () => document.removeEventListener('visibilitychange', handleVisibility);
       }, [scriptUrl, activeTab]);
+
+      const ultimoRegistro = records.length > 0 ? records[0] : null;
+      const odometroActualVehiculo = ultimoRegistro ? toNum(ultimoRegistro.odometro) : 94499;
+
+      // Guardar pieza en local y enviar a Google Sheets
+      const syncPartToSheet = async (partObj) => {
+        if (!scriptUrl) return;
+        try {
+          await fetch(scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save_part', part: partObj }),
+          });
+        } catch (e) {}
+      };
+
+      const registrarCambioHoy = (pieza) => {
+        const vidaUtilDefault = pieza.id.includes('llanta') ? 45000 : pieza.id.includes('pluma') ? 15000 : 10000;
+        const nuevoKmProx = odometroActualVehiculo + vidaUtilDefault;
+        const hoy = new Date().toLocaleDateString('es-EC');
+
+        const actualizada = {
+          ...pieza,
+          estado: 'Al día',
+          fechaUltimoCambio: hoy,
+          kmUltimoCambio: odometroActualVehiculo,
+          kmProximoCambio: nuevoKmProx,
+          notas: `Cambiado el ${hoy} a los ${odometroActualVehiculo.toLocaleString()} km`
+        };
+
+        setParts((prev) => prev.map((p) => (p.id === pieza.id ? actualizada : p)));
+        syncPartToSheet(actualizada);
+      };
+
+      const guardarPiezaModal = () => {
+        if (!partForm.nombre) {
+          alert('Ingresa el nombre de la pieza o repuesto.');
+          return;
+        }
+        const nuevaPieza = {
+          ...partForm,
+          id: editingPart ? editingPart.id : 'part-' + Date.now(),
+          kmUltimoCambio: toNum(partForm.kmUltimoCambio) || odometroActualVehiculo,
+          kmProximoCambio: toNum(partForm.kmProximoCambio) || (odometroActualVehiculo + 10000),
+          costoEstimado: toNum(partForm.costoEstimado)
+        };
+
+        if (editingPart) {
+          setParts((prev) => prev.map((p) => (p.id === editingPart.id ? nuevaPieza : p)));
+        } else {
+          setParts((prev) => [nuevaPieza, ...prev]);
+        }
+
+        syncPartToSheet(nuevaPieza);
+        setShowAddPartModal(false);
+        setEditingPart(null);
+      };
+
+      const abrirEditarPieza = (pieza) => {
+        setEditingPart(pieza);
+        setPartForm({
+          nombre: pieza.nombre,
+          categoria: pieza.categoria,
+          especificacion: pieza.especificacion,
+          estado: pieza.estado,
+          fechaUltimoCambio: pieza.fechaUltimoCambio,
+          kmUltimoCambio: pieza.kmUltimoCambio,
+          kmProximoCambio: pieza.kmProximoCambio,
+          costoEstimado: pieza.costoEstimado,
+          notas: pieza.notas || ''
+        });
+        setShowAddPartModal(true);
+      };
 
       const compressImage = (file) => {
         return new Promise((resolve, reject) => {
@@ -199,22 +390,22 @@
         if (!geminiKey) {
           setIsScanning(false);
           setEditHighlight(true);
-          setScanError('Falta tu Gemini API Key en "⚙️ Configurar Sync". Agrégala o completa los datos manualmente en el Paso 3.');
+          setScanError('Falta tu Gemini API Key en "⚙️ Configurar Sync". Agrégala o completa los datos en el Paso 3.');
           return;
         }
 
         try {
-          const parts = [
+          const partsReq = [
             {
               text: `Analiza estas imágenes de una factura de gasolina de Ecuador y/o el tablero de una Chevrolet Captiva. Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (usa punto para decimales): {"fecha": "DD/MM/YYYY", "odometro": 0, "recorrido": 0, "galones": 0, "subtotal": 0, "iva": 0, "costoTotal": 0, "facturaNo": "", "estacion": ""}`
             }
           ];
 
           if (invoiceImg) {
-            parts.push({ inline_data: { mime_type: 'image/jpeg', data: invoiceImg.split(',')[1] } });
+            partsReq.push({ inline_data: { mime_type: 'image/jpeg', data: invoiceImg.split(',')[1] } });
           }
           if (dashImg) {
-            parts.push({ inline_data: { mime_type: 'image/jpeg', data: dashImg.split(',')[1] } });
+            partsReq.push({ inline_data: { mime_type: 'image/jpeg', data: dashImg.split(',')[1] } });
           }
 
           const response = await fetch(
@@ -222,14 +413,12 @@
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ contents: [{ parts }] })
+              body: JSON.stringify({ contents: [{ parts: partsReq }] })
             }
           );
 
           const result = await response.json();
-          if (result.error) {
-            throw new Error(result.error.message || 'API Key inválida');
-          }
+          if (result.error) throw new Error(result.error.message || 'API Key inválida');
 
           const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
           const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -240,7 +429,6 @@
           const newOdo = parsed.odometro ? toNum(parsed.odometro) : '';
           let calcTrip = parsed.recorrido ? toNum(parsed.recorrido) : '';
 
-          // Si el trip viene en 0 o se acumuló sin reiniciar, calcula la diferencia real contra el último odómetro en base
           if (lastOdo > 0 && newOdo > lastOdo && (!calcTrip || calcTrip === 0 || calcTrip > (newOdo - lastOdo) * 1.4)) {
             calcTrip = Number((newOdo - lastOdo).toFixed(1));
           }
@@ -263,17 +451,15 @@
           }));
           setEditHighlight(true);
         } catch (err) {
-          setScanError('Detalle IA: ' + err.message + '. Puedes revisar o editar los campos directamente en el Paso 3.');
+          setScanError('Detalle IA: ' + err.message + '. Puedes editar los campos directamente en el Paso 3.');
           setEditHighlight(true);
         } finally {
           setIsScanning(false);
         }
       };
 
-      const ultimoRegistro = records.length > 0 ? records[0] : null;
       const odoNum = toNum(form.odometro);
       const tripInput = toNum(form.recorrido);
-      // Si el usuario dejó Recorrido en 0 pero hay un odómetro anterior en la base, sugerimos la resta automática
       const tripEfectivo =
         tripInput > 0
           ? tripInput
@@ -299,6 +485,7 @@
         const ivaNum = toNum(form.iva) || Number((totalNum - subNum).toFixed(2));
 
         const nuevoRegistro = {
+          action: 'save_fuel',
           id: Date.now(),
           fecha: form.fecha,
           odometro: odoNum,
@@ -321,7 +508,7 @@
 
         if (scriptUrl) {
           setIsSyncing(true);
-          setSyncStatus('Subiendo fila a Google Sheets...');
+          setSyncStatus('Subiendo a Google Sheets...');
           try {
             await fetch(scriptUrl, {
               method: 'POST',
@@ -332,7 +519,7 @@
             setSyncStatus('¡Guardado en Google Sheets!');
             setTimeout(() => fetchFromGoogleSheets(), 1400);
           } catch (e) {
-            setSyncStatus('Guardado local (Error de red con Sheets)');
+            setSyncStatus('Guardado local');
           } finally {
             setIsSyncing(false);
           }
@@ -352,7 +539,7 @@
           facturaNo: '',
           estacion: '',
         }));
-        alert('✅ Registro guardado en las 14 columnas de tu Google Sheet.');
+        alert('✅ Tanqueo guardado en las 16 columnas de tu Google Sheet.');
       };
 
       const totalPrimax = records
@@ -373,6 +560,9 @@
       const gastoGasolinaMensualProyectado = costoKmPromedio * MONTHLY_AVG_KM;
       const presupuestoOperativoTotal = gastoGasolinaMensualProyectado + FIXED_PARKING;
 
+      const piezasUrgentesCount = parts.filter((p) => p.estado === 'Urgente').length;
+      const filteredParts = filterPartStatus === 'Todas' ? parts : parts.filter((p) => p.estado === filterPartStatus);
+
       const codigoAppsScript = `function toNum(val) {
   if (typeof val === 'number') return val;
   if (!val) return 0;
@@ -388,39 +578,57 @@ function formatDate(val) {
   return String(val);
 }
 function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheets()[0];
   var rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);
-  var data = [];
-  for (var i = rows.length - 1; i >= 1; i--) {
-    var r = rows[i];
-    if (!r[0] && !r[1]) continue;
-    var recorrido = toNum(r[2]);
-    var galones = toNum(r[3]);
-    var costoTotal = toNum(r[5]);
-    var precioGalon = toNum(r[6]) || (galones > 0 ? Number((costoTotal / galones).toFixed(2)) : 0);
-    var rendimiento = (galones > 0 && recorrido > 0) ? Number((recorrido / galones).toFixed(2)) : 0;
-    var costoKm = (recorrido > 0 && costoTotal > 0) ? Number((costoTotal / recorrido).toFixed(4)) : 0;
-    data.push({
-      id: i, fecha: formatDate(r[0]), odometro: toNum(r[1]), recorrido: recorrido,
-      galones: galones, tipoGasolina: r[4] || "Súper", costoTotal: costoTotal,
-      precioGalon: precioGalon, subtotal: toNum(r[7]), iva: toNum(r[8]),
-      metodoPago: r[9] || "Tarjeta Primax", kmMantenimiento: toNum(r[10]),
-      facturaNo: r[11] || "S/N", estacion: r[12] || "",
-      leyendaMantenimiento: r[13] || "", rendimiento: rendimiento, costoKm: costoKm
-    });
+  var fuel = [];
+  if (rows.length > 1) {
+    for (var i = rows.length - 1; i >= 1; i--) {
+      var r = rows[i];
+      if (!r[0] && !r[1]) continue;
+      var recorrido = toNum(r[2]);
+      var galones = toNum(r[3]);
+      var costoTotal = toNum(r[5]);
+      var precioGalon = toNum(r[6]) || (galones > 0 ? Number((costoTotal / galones).toFixed(2)) : 0);
+      var rendimiento = toNum(r[14]) || ((galones > 0 && recorrido > 0) ? Number((recorrido / galones).toFixed(2)) : 0);
+      var costoKm = toNum(r[15]) || ((recorrido > 0 && costoTotal > 0) ? Number((costoTotal / recorrido).toFixed(4)) : 0);
+      fuel.push({
+        id: i, fecha: formatDate(r[0]), odometro: toNum(r[1]), recorrido: recorrido,
+        galones: galones, tipoGasolina: r[4] || "Súper", costoTotal: costoTotal,
+        precioGalon: precioGalon, subtotal: toNum(r[7]), iva: toNum(r[8]),
+        metodoPago: r[9] || "Tarjeta Primax", kmMantenimiento: toNum(r[10]),
+        facturaNo: r[11] || "S/N", estacion: r[12] || "",
+        leyendaMantenimiento: r[13] || "", rendimiento: rendimiento, costoKm: costoKm
+      });
+    }
   }
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(fuel)).setMimeType(ContentService.MimeType.JSON);
 }
 function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var d = JSON.parse(e.postData.contents);
+  if (d.action === "save_part" && d.part) {
+    var pSheet = ss.getSheetByName("Inventario_Piezas");
+    if (!pSheet) {
+      pSheet = ss.insertSheet("Inventario_Piezas");
+      pSheet.appendRow(["ID", "Pieza / Repuesto", "Categoría", "Especificación", "Estado", "Fecha Último Cambio", "Km Último Cambio", "Km Próximo Cambio", "Costo Estimado ($)", "Notas"]);
+    }
+    var p = d.part;
+    pSheet.appendRow([p.id, p.nombre, p.categoria, p.especificacion, p.estado, p.fechaUltimoCambio, p.kmUltimoCambio, p.kmProximoCambio, p.costoEstimado, p.notas]);
+    return ContentService.createTextOutput(JSON.stringify({status: "part_saved"})).setMimeType(ContentService.MimeType.JSON);
+  }
+  var sheet = ss.getSheets()[0];
   var kmRest = Number(d.kmMantenimiento) || Math.max(0, 102000 - Number(d.odometro));
+  var recorrido = Number(d.recorrido) || 0;
+  var galones = Number(d.galones) || 0;
+  var costoTotal = Number(d.costoTotal) || 0;
+  var rendimiento = Number(d.rendimiento) || (galones > 0 && recorrido > 0 ? Number((recorrido / galones).toFixed(2)) : 0);
+  var costoKm = Number(d.costoKm) || (recorrido > 0 && costoTotal > 0 ? Number((costoTotal / recorrido).toFixed(4)) : 0);
   sheet.appendRow([
-    d.fecha, Number(d.odometro), Number(d.recorrido), Number(d.galones),
-    d.tipoGasolina || "Súper", Number(d.costoTotal), Number(d.precioGalon),
-    Number(d.subtotal), Number(d.iva), d.metodoPago, kmRest,
-    d.facturaNo || "S/N", d.estacion || "EESS", "Mantenimiento en " + kmRest.toLocaleString() + " km"
+    d.fecha, Number(d.odometro), recorrido, galones, d.tipoGasolina || "Súper",
+    costoTotal, Number(d.precioGalon), Number(d.subtotal), Number(d.iva),
+    d.metodoPago, kmRest, d.facturaNo || "S/N", d.estacion || "EESS",
+    "Mantenimiento en " + kmRest.toLocaleString() + " km", rendimiento, costoKm
   ]);
   return ContentService.createTextOutput(JSON.stringify({status: "ok"})).setMimeType(ContentService.MimeType.JSON);
 }`;
@@ -495,40 +703,53 @@ function doPost(e) {
                   </div>
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-400 px-1">
-                  <span>⛽ {ultimoRegistro.estacion || 'Gasolinera'}</span>
+                  <span>🛞 {piezasUrgentesCount > 0 ? `${piezasUrgentesCount} pieza urgente (Llantas)` : 'Piezas al día'}</span>
                   <span className="text-emerald-400 font-semibold">
-                    🛠️ Próx. Mant: en {toNum(ultimoRegistro.kmMantenimiento).toLocaleString()} km
+                    🛠️ Mant: en {toNum(ultimoRegistro.kmMantenimiento).toLocaleString()} km
                   </span>
                 </div>
               </div>
             ) : (
               <p className="text-xs text-slate-400">
-                Sin registros cargados aún. Toca "Refrescar Base" o revisa tu URL de Apps Script.
+                Odómetro base: 94,499 km • Toca "Refrescar Base" para sincronizar con Google Sheets.
               </p>
             )}
           </div>
 
-          {/* NAVEGACIÓN */}
-          <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 mb-3">
+          {/* NAVEGACIÓN DE 4 PESTAÑAS */}
+          <div className="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 mb-3">
             <button
               onClick={() => setActiveTab('nuevo')}
-              className={`py-2 rounded-lg text-xs font-bold transition ${
+              className={`py-2 rounded-lg text-[11px] font-bold transition ${
                 activeTab === 'nuevo' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
-              ➕ Nuevo Tanqueo
+              ➕ Tanqueo
+            </button>
+            <button
+              onClick={() => setActiveTab('piezas')}
+              className={`py-2 rounded-lg text-[11px] font-bold transition relative ${
+                activeTab === 'piezas' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
+              }`}
+            >
+              🔧 Piezas
+              {piezasUrgentesCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[9px]">
+                  {piezasUrgentesCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('reporte')}
-              className={`py-2 rounded-lg text-xs font-bold transition ${
+              className={`py-2 rounded-lg text-[11px] font-bold transition ${
                 activeTab === 'reporte' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
-              📊 Reporte Mensual
+              📊 Reporte
             </button>
             <button
               onClick={() => setActiveTab('sheets')}
-              className={`py-2 rounded-lg text-xs font-bold transition ${
+              className={`py-2 rounded-lg text-[11px] font-bold transition ${
                 activeTab === 'sheets' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
@@ -751,7 +972,136 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 2: REPORTE MENSUAL */}
+          {/* PESTAÑA 2: INVENTARIO DE PIEZAS Y REPUESTOS */}
+          {activeTab === 'piezas' && (
+            <div className="space-y-3">
+              {/* Resumen de Estado del Inventario */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div>
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                      🔧 Inventario de Piezas y Desgaste
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Calculado con tu odómetro actual: <span className="text-white font-bold">{odometroActualVehiculo.toLocaleString()} km</span>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingPart(null);
+                      setPartForm({
+                        nombre: '',
+                        categoria: 'Mantenimiento General',
+                        especificacion: '',
+                        estado: 'Al día',
+                        fechaUltimoCambio: new Date().toLocaleDateString('es-EC'),
+                        kmUltimoCambio: odometroActualVehiculo,
+                        kmProximoCambio: odometroActualVehiculo + 10000,
+                        costoEstimado: '',
+                        notas: ''
+                      });
+                      setShowAddPartModal(true);
+                    }}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow"
+                  >
+                    + Nueva Pieza
+                  </button>
+                </div>
+
+                {/* Filtros por semáforo */}
+                <div className="grid grid-cols-4 gap-1.5 mt-2">
+                  {['Todas', 'Urgente', 'Próximo', 'Al día'].map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setFilterPartStatus(st)}
+                      className={`py-1.5 rounded-lg text-[11px] font-bold border transition ${
+                        filterPartStatus === st
+                          ? 'bg-slate-800 border-cyan-400 text-cyan-300'
+                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lista de Piezas */}
+              <div className="space-y-2.5">
+                {filteredParts.map((pieza) => {
+                  const kmRestantesPieza = Math.max(0, toNum(pieza.kmProximoCambio) - odometroActualVehiculo);
+                  const badgeColor =
+                    pieza.estado === 'Urgente'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                      : pieza.estado === 'Próximo'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+
+                  return (
+                    <div
+                      key={pieza.id}
+                      className={`bg-slate-900 rounded-2xl p-3.5 border transition ${
+                        pieza.estado === 'Urgente' ? 'border-rose-500/60 shadow-lg shadow-rose-950/30' : 'border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            {pieza.categoria}
+                          </span>
+                          <h3 className="text-sm font-bold text-white">{pieza.nombre}</h3>
+                          <p className="text-[11px] text-cyan-300/90 mt-0.5">{pieza.especificacion}</p>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                          {pieza.estado === 'Urgente' ? '🚨 Urgente' : pieza.estado === 'Próximo' ? '⚠️ Próximo' : '✅ Al día'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 bg-slate-950/80 rounded-xl p-2 mt-2.5 border border-slate-800/80 text-center">
+                        <div>
+                          <p className="text-[10px] text-slate-400">Último Cambio</p>
+                          <p className="text-[11px] font-bold text-white">{pieza.fechaUltimoCambio}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400">Próx. Cambio</p>
+                          <p className="text-[11px] font-bold text-cyan-300">
+                            {pieza.estado === 'Urgente' ? '¡Inmediato!' : `En ${kmRestantesPieza.toLocaleString()} km`}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400">Costo Ref.</p>
+                          <p className="text-[11px] font-bold text-emerald-400">
+                            ${toNum(pieza.costoEstimado).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {pieza.notas && (
+                        <p className="text-[11px] text-slate-400 mt-2 italic">📝 {pieza.notas}</p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 mt-2.5">
+                        <button
+                          onClick={() => registrarCambioHoy(pieza)}
+                          className="py-1.5 px-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold"
+                        >
+                          ✓ Registrar Cambio Hoy
+                        </button>
+                        <button
+                          onClick={() => abrirEditarPieza(pieza)}
+                          className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-semibold"
+                        >
+                          ✏️ Editar / Estado
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* PESTAÑA 3: REPORTE MENSUAL */}
           {activeTab === 'reporte' && (
             <div className="space-y-3">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
@@ -810,7 +1160,7 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 3: BASE GOOGLE SHEETS */}
+          {/* PESTAÑA 4: BASE GOOGLE SHEETS */}
           {activeTab === 'sheets' && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
               <div className="flex items-center justify-between">
@@ -844,7 +1194,119 @@ function doPost(e) {
             </div>
           )}
 
-          {/* MODAL DE CONFIGURACIÓN */}
+          {/* MODAL PARA AGREGAR O EDITAR PIEZA DEL INVENTARIO */}
+          {showAddPartModal && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
+                <h3 className="font-bold text-sm text-cyan-400">
+                  {editingPart ? '✏️ Editar Pieza / Repuesto' : '➕ Agregar Pieza al Inventario'}
+                </h3>
+
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[11px] text-slate-300">Nombre de la Pieza</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Juego de 4 Llantas"
+                      value={partForm.nombre}
+                      onChange={(e) => setPartForm({ ...partForm, nombre: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-300">Estado Actual</label>
+                      <select
+                        value={partForm.estado}
+                        onChange={(e) => setPartForm({ ...partForm, estado: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                      >
+                        <option value="Urgente">🚨 Urgente (Cambiar)</option>
+                        <option value="Próximo">⚠️ Próximo</option>
+                        <option value="Al día">✅ Al día</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-300">Fecha Último Cambio</label>
+                      <input
+                        type="text"
+                        value={partForm.fechaUltimoCambio}
+                        onChange={(e) => setPartForm({ ...partForm, fechaUltimoCambio: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-300">Medida / Especificación Técnica</label>
+                    <input
+                      type="text"
+                      placeholder='Ej. 215/60 R17 o Piloto 24" / Copiloto 16"'
+                      value={partForm.especificacion}
+                      onChange={(e) => setPartForm({ ...partForm, especificacion: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-300">Km Últ. Cambio</label>
+                      <input
+                        type="number"
+                        value={partForm.kmUltimoCambio}
+                        onChange={(e) => setPartForm({ ...partForm, kmUltimoCambio: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-300">Km Próx. Cambio</label>
+                      <input
+                        type="number"
+                        value={partForm.kmProximoCambio}
+                        onChange={(e) => setPartForm({ ...partForm, kmProximoCambio: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-300">Costo Est. ($)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={partForm.costoEstimado}
+                        onChange={(e) => setPartForm({ ...partForm, costoEstimado: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-300">Notas / Marca / Taller</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Cambiadas hace 2 semanas"
+                      value={partForm.notas}
+                      onChange={(e) => setPartForm({ ...partForm, notas: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    onClick={() => setShowAddPartModal(false)}
+                    className="py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={guardarPiezaModal}
+                    className="py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-xs"
+                  >
+                    Guardar Pieza
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL DE CONFIGURACIÓN SYNC */}
           {showSyncModal && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
               <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
@@ -884,7 +1346,7 @@ function doPost(e) {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] text-slate-400">Código Apps Script (14 columnas):</p>
+                    <p className="text-[11px] text-slate-400">Código Apps Script (Tanqueos + Inventario Piezas):</p>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(codigoAppsScript);
