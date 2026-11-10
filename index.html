@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#020617" />
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2933/2933939.png" />
 
-  <title>Captiva LT 1.5 Turbo - Control & Inventario</title>
+  <title>Captiva LT 1.5 Turbo - Suite Vehicular</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -41,19 +41,21 @@
     const MAINTENANCE_GOAL = 102000;
     const MONTHLY_AVG_KM = 1145;
     const FIXED_PARKING = 48.88;
+    const TIRE_ROTATION_INTERVAL = 5000;
 
     const DEFAULT_PARTS = [
       {
         id: 'llantas-4',
         nombre: 'Juego de 4 Llantas',
         categoria: 'Neumáticos y Suspensión',
-        especificacion: 'Medida 215/60 R17 (Presión 32-35 PSI)',
+        especificacion: 'Medida 215/60 R17 (Presión recomendada: 32-35 PSI)',
         estado: 'Urgente',
         fechaUltimoCambio: 'Pendiente de cambio',
         kmUltimoCambio: 50000,
         kmProximoCambio: 94499,
+        kmUltimaRotacion: 90000,
         costoEstimado: 420.00,
-        notas: 'Cambiar las 4 llantas + alineación y balanceo'
+        notas: 'Cambiar las 4 llantas + alineación y balanceo. Rotar cada 5,000 km.'
       },
       {
         id: 'plumas-limpia',
@@ -77,7 +79,7 @@
         kmUltimoCambio: 92541,
         kmProximoCambio: 102000,
         costoEstimado: 85.00,
-        notas: 'Servicio en talleres INDUCORP'
+        notas: 'Servicio en talleres INDUCORP (01-09-2026)'
       },
       {
         id: 'pastillas-freno',
@@ -107,19 +109,19 @@
         id: 'bujias-iridio',
         nombre: 'Juego de 4 Bujías (Motor Turbo)',
         categoria: 'Encendido',
-        especificacion: 'Bujías de Iridio (Mantenimiento Mayor 100k)',
+        especificacion: 'Bujías de Iridio + Líquido de Frenos (Mant. Mayor 102k)',
         estado: 'Próximo',
         fechaUltimoCambio: '01/09/2026',
         kmUltimoCambio: 82000,
         kmProximoCambio: 102000,
         costoEstimado: 75.00,
-        notas: 'Revisar/reemplazar en el mantenimiento de 102,000 km'
+        notas: 'Reemplazar en el mantenimiento mayor de 102,000 km'
       },
       {
         id: 'bateria-12v',
         nombre: 'Batería 12V',
         categoria: 'Sistema Eléctrico',
-        especificacion: ' Revisión de voltaje y bornes',
+        especificacion: 'Revisión de voltaje y bornes',
         estado: 'Al día',
         fechaUltimoCambio: '01/09/2026',
         kmUltimoCambio: 92541,
@@ -127,6 +129,16 @@
         costoEstimado: 135.00,
         notas: 'Operativa sin novedades'
       }
+    ];
+
+    const DEFAULT_KIT_ITEMS = [
+      { id: 'extintor', nombre: 'Extintor de Incendios (10 lb / PQS)', categoria: 'Seguridad Vial RTV', vencimiento: '09/2027', estado: 'Vigente', listo: true },
+      { id: 'triangulos', nombre: '2 Triángulos Reflectivos + Chaleco', categoria: 'Seguridad Vial RTV', vencimiento: 'Permanente', estado: 'Vigente', listo: true },
+      { id: 'cables-llave', nombre: 'Cables de Corriente + Gata + Llave Cruz', categoria: 'Emergencia Mecánica', vencimiento: 'Permanente', estado: 'Vigente', listo: true },
+      { id: 'antisepticos', nombre: 'Alcohol, Suero Fisiológico y Yodopovidona', categoria: 'Botiquín Curación', vencimiento: '10/2028', estado: 'Vigente', listo: true },
+      { id: 'gasas-vendas', nombre: 'Gasas Estériles (10), Vendas (3" y 4"), Esparadrapo y Curitas', categoria: 'Botiquín Curación', vencimiento: '10/2029', estado: 'Vigente', listo: true },
+      { id: 'instrumental', nombre: 'Guantes Nitrilo (2 pares), Tijera Punta Redonda, Pinza y Mascarillas', categoria: 'Botiquín Instrumental', vencimiento: '10/2029', estado: 'Vigente', listo: true },
+      { id: 'medicamentos', nombre: 'Paracetamol, Ibuprofeno, Loratadina, Sales Rehidratación y Antiácido', categoria: 'Botiquín Medicamentos (Tabletas)', vencimiento: '06/2028', estado: 'Vigente', listo: true }
     ];
 
     const toNum = (val) => {
@@ -139,14 +151,26 @@
     function App() {
       const [activeTab, setActiveTab] = useState('nuevo');
       const [records, setRecords] = useState(() => {
-        const saved = localStorage.getItem('captiva_records_v4');
+        const saved = localStorage.getItem('captiva_records_v5');
         return saved ? JSON.parse(saved) : [];
       });
 
       const [parts, setParts] = useState(() => {
-        const saved = localStorage.getItem('captiva_parts_v1');
+        const saved = localStorage.getItem('captiva_parts_v2');
         return saved ? JSON.parse(saved) : DEFAULT_PARTS;
       });
+
+      const [kitItems, setKitItems] = useState(() => {
+        const saved = localStorage.getItem('captiva_kit_v1');
+        return saved ? JSON.parse(saved) : DEFAULT_KIT_ITEMS;
+      });
+
+      // Alcancía de Mantenimiento 102,000 km
+      const [savingsFund, setSavingsFund] = useState(() => {
+        const saved = localStorage.getItem('captiva_savings_v1');
+        return saved ? JSON.parse(saved) : { ahorrado: 40.00, meta: 300.00, ultimoAporte: '09/11/2026' };
+      });
+      const [customSavingInput, setCustomSavingInput] = useState('');
 
       const [filterPartStatus, setFilterPartStatus] = useState('Todas');
       const [showAddPartModal, setShowAddPartModal] = useState(false);
@@ -159,6 +183,7 @@
         fechaUltimoCambio: new Date().toLocaleDateString('es-EC'),
         kmUltimoCambio: 94499,
         kmProximoCambio: 104499,
+        kmUltimaRotacion: 94499,
         costoEstimado: '',
         notas: ''
       });
@@ -169,6 +194,7 @@
       const [isSyncing, setIsSyncing] = useState(false);
       const [syncStatus, setSyncStatus] = useState('Listo');
       const [copiedScript, setCopiedScript] = useState(false);
+      const [copiedText, setCopiedText] = useState('');
 
       const [invoiceImg, setInvoiceImg] = useState(null);
       const [dashImg, setDashImg] = useState(null);
@@ -196,12 +222,20 @@
       const dashCamRef = useRef(null);
 
       useEffect(() => {
-        localStorage.setItem('captiva_records_v4', JSON.stringify(records));
+        localStorage.setItem('captiva_records_v5', JSON.stringify(records));
       }, [records]);
 
       useEffect(() => {
-        localStorage.setItem('captiva_parts_v1', JSON.stringify(parts));
+        localStorage.setItem('captiva_parts_v2', JSON.stringify(parts));
       }, [parts]);
+
+      useEffect(() => {
+        localStorage.setItem('captiva_kit_v1', JSON.stringify(kitItems));
+      }, [kitItems]);
+
+      useEffect(() => {
+        localStorage.setItem('captiva_savings_v1', JSON.stringify(savingsFund));
+      }, [savingsFund]);
 
       const fetchFromGoogleSheets = async () => {
         if (!scriptUrl) return;
@@ -211,7 +245,6 @@
           const res = await fetch(scriptUrl + '?t=' + Date.now());
           const rawData = await res.json();
           const fuelRows = Array.isArray(rawData) ? rawData : (rawData.fuel || []);
-          const sheetParts = rawData.parts || [];
 
           if (Array.isArray(fuelRows)) {
             const normalized = fuelRows.map((r, idx) => {
@@ -241,9 +274,6 @@
             });
             setRecords(normalized);
           }
-          if (Array.isArray(sheetParts) && sheetParts.length > 0) {
-            setParts(sheetParts);
-          }
           setSyncStatus('Sincronizado con Google Sheets');
         } catch (err) {
           setSyncStatus('Usando copia local');
@@ -264,21 +294,21 @@
       const ultimoRegistro = records.length > 0 ? records[0] : null;
       const odometroActualVehiculo = ultimoRegistro ? toNum(ultimoRegistro.odometro) : 94499;
 
-      // Guardar pieza en local y enviar a Google Sheets
-      const syncPartToSheet = async (partObj) => {
+      const syncExtraToSheet = async (payload) => {
         if (!scriptUrl) return;
         try {
           await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'save_part', part: partObj }),
+            body: JSON.stringify(payload),
           });
         } catch (e) {}
       };
 
       const registrarCambioHoy = (pieza) => {
-        const vidaUtilDefault = pieza.id.includes('llanta') ? 45000 : pieza.id.includes('pluma') ? 15000 : 10000;
+        const esLlanta = pieza.id.includes('llanta') || pieza.nombre.toLowerCase().includes('llanta');
+        const vidaUtilDefault = esLlanta ? 45000 : pieza.id.includes('pluma') ? 15000 : 10000;
         const nuevoKmProx = odometroActualVehiculo + vidaUtilDefault;
         const hoy = new Date().toLocaleDateString('es-EC');
 
@@ -288,11 +318,25 @@
           fechaUltimoCambio: hoy,
           kmUltimoCambio: odometroActualVehiculo,
           kmProximoCambio: nuevoKmProx,
-          notas: `Cambiado el ${hoy} a los ${odometroActualVehiculo.toLocaleString()} km`
+          kmUltimaRotacion: odometroActualVehiculo,
+          notas: esLlanta
+            ? `4 llantas nuevas instaladas el ${hoy} (${odometroActualVehiculo.toLocaleString()} km). Próxima rotación a los ${(odometroActualVehiculo + TIRE_ROTATION_INTERVAL).toLocaleString()} km.`
+            : `Cambiado el ${hoy} a los ${odometroActualVehiculo.toLocaleString()} km`
         };
 
         setParts((prev) => prev.map((p) => (p.id === pieza.id ? actualizada : p)));
-        syncPartToSheet(actualizada);
+        syncExtraToSheet({ action: 'save_part', part: actualizada });
+      };
+
+      const registrarRotacionLlantas = (pieza) => {
+        const hoy = new Date().toLocaleDateString('es-EC');
+        const actualizada = {
+          ...pieza,
+          kmUltimaRotacion: odometroActualVehiculo,
+          notas: `Rotación y balanceo realizados el ${hoy} a los ${odometroActualVehiculo.toLocaleString()} km. Próxima a los ${(odometroActualVehiculo + TIRE_ROTATION_INTERVAL).toLocaleString()} km.`
+        };
+        setParts((prev) => prev.map((p) => (p.id === pieza.id ? actualizada : p)));
+        syncExtraToSheet({ action: 'save_part', part: actualizada });
       };
 
       const guardarPiezaModal = () => {
@@ -305,6 +349,7 @@
           id: editingPart ? editingPart.id : 'part-' + Date.now(),
           kmUltimoCambio: toNum(partForm.kmUltimoCambio) || odometroActualVehiculo,
           kmProximoCambio: toNum(partForm.kmProximoCambio) || (odometroActualVehiculo + 10000),
+          kmUltimaRotacion: toNum(partForm.kmUltimaRotacion) || odometroActualVehiculo,
           costoEstimado: toNum(partForm.costoEstimado)
         };
 
@@ -314,7 +359,7 @@
           setParts((prev) => [nuevaPieza, ...prev]);
         }
 
-        syncPartToSheet(nuevaPieza);
+        syncExtraToSheet({ action: 'save_part', part: nuevaPieza });
         setShowAddPartModal(false);
         setEditingPart(null);
       };
@@ -329,10 +374,28 @@
           fechaUltimoCambio: pieza.fechaUltimoCambio,
           kmUltimoCambio: pieza.kmUltimoCambio,
           kmProximoCambio: pieza.kmProximoCambio,
+          kmUltimaRotacion: pieza.kmUltimaRotacion || pieza.kmUltimoCambio,
           costoEstimado: pieza.costoEstimado,
           notas: pieza.notas || ''
         });
         setShowAddPartModal(true);
+      };
+
+      const abonarAlFondo = (monto) => {
+        const valor = toNum(monto);
+        if (valor <= 0) return;
+        const hoy = new Date().toLocaleDateString('es-EC');
+        const nuevoSaldo = Math.max(0, Number((toNum(savingsFund.ahorrado) + valor).toFixed(2)));
+        const actualizado = { ...savingsFund, ahorrado: nuevoSaldo, ultimoAporte: hoy };
+        setSavingsFund(actualizado);
+        setCustomSavingInput('');
+        syncExtraToSheet({ action: 'save_fund', fund: actualizado });
+      };
+
+      const copiarDato = (texto, etiqueta) => {
+        navigator.clipboard.writeText(texto);
+        setCopiedText(etiqueta);
+        setTimeout(() => setCopiedText(''), 2000);
       };
 
       const compressImage = (file) => {
@@ -563,6 +626,10 @@
       const piezasUrgentesCount = parts.filter((p) => p.estado === 'Urgente').length;
       const filteredParts = filterPartStatus === 'Todas' ? parts : parts.filter((p) => p.estado === filterPartStatus);
 
+      const kmFaltantes102k = Math.max(0, MAINTENANCE_GOAL - odometroActualVehiculo);
+      const mesesEstimadosMant = (kmFaltantes102k / MONTHLY_AVG_KM).toFixed(1);
+      const porcentajeAhorro = Math.min(100, Math.round((toNum(savingsFund.ahorrado) / toNum(savingsFund.meta)) * 100));
+
       const codigoAppsScript = `function toNum(val) {
   if (typeof val === 'number') return val;
   if (!val) return 0;
@@ -611,11 +678,20 @@ function doPost(e) {
     var pSheet = ss.getSheetByName("Inventario_Piezas");
     if (!pSheet) {
       pSheet = ss.insertSheet("Inventario_Piezas");
-      pSheet.appendRow(["ID", "Pieza / Repuesto", "Categoría", "Especificación", "Estado", "Fecha Último Cambio", "Km Último Cambio", "Km Próximo Cambio", "Costo Estimado ($)", "Notas"]);
+      pSheet.appendRow(["ID", "Pieza / Repuesto", "Categoría", "Especificación", "Estado", "Fecha Último Cambio", "Km Último Cambio", "Km Próximo Cambio", "Km Última Rotación", "Costo Estimado ($)", "Notas"]);
     }
     var p = d.part;
-    pSheet.appendRow([p.id, p.nombre, p.categoria, p.especificacion, p.estado, p.fechaUltimoCambio, p.kmUltimoCambio, p.kmProximoCambio, p.costoEstimado, p.notas]);
+    pSheet.appendRow([p.id, p.nombre, p.categoria, p.especificacion, p.estado, p.fechaUltimoCambio, p.kmUltimoCambio, p.kmProximoCambio, p.kmUltimaRotacion || p.kmUltimoCambio, p.costoEstimado, p.notas]);
     return ContentService.createTextOutput(JSON.stringify({status: "part_saved"})).setMimeType(ContentService.MimeType.JSON);
+  }
+  if (d.action === "save_fund" && d.fund) {
+    var fSheet = ss.getSheetByName("Alcancia_Mantenimiento");
+    if (!fSheet) {
+      fSheet = ss.insertSheet("Alcancia_Mantenimiento");
+      fSheet.appendRow(["Fecha Actualización", "Saldo Ahorrado ($)", "Meta Mantenimiento 102k ($)"]);
+    }
+    fSheet.appendRow([d.fund.ultimoAporte, d.fund.ahorrado, d.fund.meta]);
+    return ContentService.createTextOutput(JSON.stringify({status: "fund_saved"})).setMimeType(ContentService.MimeType.JSON);
   }
   var sheet = ss.getSheets()[0];
   var kmRest = Number(d.kmMantenimiento) || Math.max(0, 102000 - Number(d.odometro));
@@ -703,24 +779,24 @@ function doPost(e) {
                   </div>
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-400 px-1">
-                  <span>🛞 {piezasUrgentesCount > 0 ? `${piezasUrgentesCount} pieza urgente (Llantas)` : 'Piezas al día'}</span>
+                  <span>🛞 {piezasUrgentesCount > 0 ? `${piezasUrgentesCount} urgente (Llantas)` : 'Piezas al día'}</span>
                   <span className="text-emerald-400 font-semibold">
-                    🛠️ Mant: en {toNum(ultimoRegistro.kmMantenimiento).toLocaleString()} km
+                    💰 Alcancía 102k: ${toNum(savingsFund.ahorrado).toFixed(0)}/${toNum(savingsFund.meta).toFixed(0)}
                   </span>
                 </div>
               </div>
             ) : (
               <p className="text-xs text-slate-400">
-                Odómetro base: 94,499 km • Toca "Refrescar Base" para sincronizar con Google Sheets.
+                Odómetro actual: 94,499 km • Toca "Refrescar Base" para sincronizar con Google Sheets.
               </p>
             )}
           </div>
 
-          {/* NAVEGACIÓN DE 4 PESTAÑAS */}
-          <div className="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 mb-3">
+          {/* NAVEGACIÓN DE 5 PESTAÑAS */}
+          <div className="grid grid-cols-5 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 mb-3">
             <button
               onClick={() => setActiveTab('nuevo')}
-              className={`py-2 rounded-lg text-[11px] font-bold transition ${
+              className={`py-2 rounded-lg text-[10px] font-bold transition ${
                 activeTab === 'nuevo' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
@@ -728,20 +804,28 @@ function doPost(e) {
             </button>
             <button
               onClick={() => setActiveTab('piezas')}
-              className={`py-2 rounded-lg text-[11px] font-bold transition relative ${
+              className={`py-2 rounded-lg text-[10px] font-bold transition relative ${
                 activeTab === 'piezas' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
               🔧 Piezas
               {piezasUrgentesCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[9px]">
+                <span className="ml-0.5 px-1 bg-rose-500 text-white rounded-full text-[9px]">
                   {piezasUrgentesCount}
                 </span>
               )}
             </button>
             <button
+              onClick={() => setActiveTab('guantera')}
+              className={`py-2 rounded-lg text-[10px] font-bold transition ${
+                activeTab === 'guantera' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
+              }`}
+            >
+              📋 Guantera
+            </button>
+            <button
               onClick={() => setActiveTab('reporte')}
-              className={`py-2 rounded-lg text-[11px] font-bold transition ${
+              className={`py-2 rounded-lg text-[10px] font-bold transition ${
                 activeTab === 'reporte' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
@@ -749,7 +833,7 @@ function doPost(e) {
             </button>
             <button
               onClick={() => setActiveTab('sheets')}
-              className={`py-2 rounded-lg text-[11px] font-bold transition ${
+              className={`py-2 rounded-lg text-[10px] font-bold transition ${
                 activeTab === 'sheets' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
               }`}
             >
@@ -972,18 +1056,17 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 2: INVENTARIO DE PIEZAS Y REPUESTOS */}
+          {/* PESTAÑA 2: INVENTARIO DE PIEZAS Y ROTACIÓN DE LLANTAS */}
           {activeTab === 'piezas' && (
             <div className="space-y-3">
-              {/* Resumen de Estado del Inventario */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
                 <div className="flex items-center justify-between mb-2.5">
                   <div>
                     <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                      🔧 Inventario de Piezas y Desgaste
+                      🔧 Inventario de Piezas y Rotación
                     </h2>
                     <p className="text-[11px] text-slate-400">
-                      Calculado con tu odómetro actual: <span className="text-white font-bold">{odometroActualVehiculo.toLocaleString()} km</span>
+                      Odómetro actual: <span className="text-white font-bold">{odometroActualVehiculo.toLocaleString()} km</span>
                     </p>
                   </div>
                   <button
@@ -997,6 +1080,7 @@ function doPost(e) {
                         fechaUltimoCambio: new Date().toLocaleDateString('es-EC'),
                         kmUltimoCambio: odometroActualVehiculo,
                         kmProximoCambio: odometroActualVehiculo + 10000,
+                        kmUltimaRotacion: odometroActualVehiculo,
                         costoEstimado: '',
                         notas: ''
                       });
@@ -1008,7 +1092,6 @@ function doPost(e) {
                   </button>
                 </div>
 
-                {/* Filtros por semáforo */}
                 <div className="grid grid-cols-4 gap-1.5 mt-2">
                   {['Todas', 'Urgente', 'Próximo', 'Al día'].map((st) => (
                     <button
@@ -1026,10 +1109,14 @@ function doPost(e) {
                 </div>
               </div>
 
-              {/* Lista de Piezas */}
               <div className="space-y-2.5">
                 {filteredParts.map((pieza) => {
+                  const esLlanta = pieza.id.includes('llanta') || pieza.nombre.toLowerCase().includes('llanta');
                   const kmRestantesPieza = Math.max(0, toNum(pieza.kmProximoCambio) - odometroActualVehiculo);
+                  const kmBaseRotacion = toNum(pieza.kmUltimaRotacion) || toNum(pieza.kmUltimoCambio);
+                  const kmProximaRotacion = kmBaseRotacion + TIRE_ROTATION_INTERVAL;
+                  const kmRestantesRotacion = Math.max(0, kmProximaRotacion - odometroActualVehiculo);
+
                   const badgeColor =
                     pieza.estado === 'Urgente'
                       ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
@@ -1076,6 +1163,30 @@ function doPost(e) {
                         </div>
                       </div>
 
+                      {/* Contador Especial de Rotación de Llantas cada 5,000 km */}
+                      {esLlanta && (
+                        <div className="mt-2.5 bg-cyan-950/30 border border-cyan-500/30 rounded-xl p-2.5 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase text-cyan-300">
+                              🔄 Control Rotación y Balanceo (Cada 5,000 km)
+                            </p>
+                            <p className="text-[11px] text-slate-300">
+                              {pieza.estado === 'Urgente'
+                                ? 'Al instalar tus 4 llantas nuevas se activará el contador +5,000 km'
+                                : `Próxima rotación a los ${kmProximaRotacion.toLocaleString()} km (faltan ${kmRestantesRotacion.toLocaleString()} km)`}
+                            </p>
+                          </div>
+                          {pieza.estado !== 'Urgente' && (
+                            <button
+                              onClick={() => registrarRotacionLlantas(pieza)}
+                              className="bg-cyan-600/30 border border-cyan-400 text-cyan-200 px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0"
+                            >
+                              Rotar Hoy
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                       {pieza.notas && (
                         <p className="text-[11px] text-slate-400 mt-2 italic">📝 {pieza.notas}</p>
                       )}
@@ -1101,9 +1212,229 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 3: REPORTE MENSUAL */}
+          {/* PESTAÑA 3: GUANTERA DIGITAL (MATRÍCULA ATV + BOTIQUÍN Y KIT VIAL) */}
+          {activeTab === 'guantera' && (
+            <div className="space-y-3">
+              {/* Ficha Técnica Oficial de Matrícula ATV Samborondón */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                      🪪 Matrícula Digital (ATV Samborondón)
+                    </h2>
+                    <p className="text-[11px] text-slate-400">Documento: SAM-0022246433-PAR • Sin Gravamen</p>
+                  </div>
+                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    Vigente 2031
+                  </span>
+                </div>
+
+                {copiedText && (
+                  <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-center py-1 rounded-lg text-[11px] font-bold">
+                    ✓ {copiedText} copiado al portapapeles
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div
+                    onClick={() => copiarDato('LZWADAGAXLB008514', 'Chasis / VIN')}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 cursor-pointer active:bg-slate-800"
+                  >
+                    <p className="text-[10px] text-slate-400 flex justify-between">
+                      <span>CHASIS / VIN</span>
+                      <span className="text-cyan-400">📋 Copiar</span>
+                    </p>
+                    <p className="font-mono font-bold text-white text-[11px] mt-0.5">LZWADAGAXLB008514</p>
+                  </div>
+
+                  <div
+                    onClick={() => copiarDato('LJO18K81420455', 'Número de Motor')}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 cursor-pointer active:bg-slate-800"
+                  >
+                    <p className="text-[10px] text-slate-400 flex justify-between">
+                      <span>MOTOR</span>
+                      <span className="text-cyan-400">📋 Copiar</span>
+                    </p>
+                    <p className="font-mono font-bold text-white text-[11px] mt-0.5">LJO18K81420455</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center bg-slate-950/70 rounded-xl p-2 border border-slate-800 text-xs">
+                  <div>
+                    <p className="text-[10px] text-slate-400">Dígito Placa (8)</p>
+                    <p className="font-bold text-amber-300 text-[11px]">RTV: Septiembre</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Últ. Matrícula</p>
+                    <p className="font-bold text-white text-[11px]">07-OCT-2026</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Caduca</p>
+                    <p className="font-bold text-emerald-400 text-[11px]">06-OCT-2031</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center bg-slate-950/40 rounded-xl p-2 border border-slate-800/60 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Cilindraje</span>
+                    <span className="font-bold text-white">1451 CC (Turbo)</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Clase / Color</span>
+                    <span className="font-bold text-white">Jeep • Blanco</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Capacidad</span>
+                    <span className="font-bold text-white">5 Pasajeros</span>
+                  </div>
+                </div>
+
+                {/* Enlaces Rápidos de Consulta Vehicular en Ecuador */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <a
+                    href="https://srienlinea.sri.gob.ec/sri-en-linea/SriVehiculosWeb/ConsultaValoresPagarVehiculos/Consultas/consultaRubros"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 rounded-xl py-2 text-center text-[11px] font-bold"
+                  >
+                    🏛️ Consultar Valor SRI
+                  </a>
+                  <a
+                    href="https://www.atvsamborondon.gob.ec/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 rounded-xl py-2 text-center text-[11px] font-bold"
+                  >
+                    🚦 Portal ATV / Multas
+                  </a>
+                </div>
+              </div>
+
+              {/* Checklist de Botiquín y Kit de Seguridad Vial RTV */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                      🧰 Botiquín y Kit Vial (Normativa RTV)
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Toca cualquier ítem para marcar/desmarcar o verificar su vigencia
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-cyan-300">
+                    {kitItems.filter((k) => k.listo).length}/{kitItems.length} listos
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {kitItems.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() =>
+                        setKitItems((prev) =>
+                          prev.map((k) => (k.id === item.id ? { ...k, listo: !k.listo } : k))
+                        )
+                      }
+                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${
+                        item.listo
+                          ? 'bg-slate-950/90 border-slate-800'
+                          : 'bg-rose-950/20 border-rose-500/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">{item.listo ? '✅' : '⚠️'}</span>
+                        <div>
+                          <p className="text-xs font-bold text-white">{item.nombre}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {item.categoria} • Vence/Recarga: <span className="text-amber-300 font-semibold">{item.vencimiento}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PESTAÑA 4: REPORTE MENSUAL + ALCANCÍA DE MANTENIMIENTO */}
           {activeTab === 'reporte' && (
             <div className="space-y-3">
+              {/* Alcancía Interactiva para Mantenimiento Mayor 102,000 km */}
+              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/40 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                      💰 Alcancía Mantenimiento Mayor (102,000 km)
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Faltan <span className="text-white font-bold">{kmFaltantes102k.toLocaleString()} km</span> (~{mesesEstimadosMant} meses) • Sugerido: $31 a $40/mes
+                    </p>
+                  </div>
+                  <span className="text-xs font-extrabold text-emerald-300">
+                    ${toNum(savingsFund.ahorrado).toFixed(2)} / ${toNum(savingsFund.meta).toFixed(0)}
+                  </span>
+                </div>
+
+                {/* Barra de progreso */}
+                <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-300"
+                    style={{ width: `${porcentajeAhorro}%` }}
+                  />
+                </div>
+
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>Avance del fondo: {porcentajeAhorro}%</span>
+                  <span>Último abono: {savingsFund.ultimoAporte}</span>
+                </div>
+
+                {/* Botones rápidos de aporte quincenal y mensual */}
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <button
+                    onClick={() => abonarAlFondo(20)}
+                    className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 py-2 rounded-xl text-xs font-bold"
+                  >
+                    +$20 (Quincena)
+                  </button>
+                  <button
+                    onClick={() => abonarAlFondo(40)}
+                    className="bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 py-2 rounded-xl text-xs font-bold"
+                  >
+                    +$40 (Mes)
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Deseas reiniciar el saldo ahorrado a $0?')) {
+                        setSavingsFund({ ...savingsFund, ahorrado: 0 });
+                      }
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 py-2 rounded-xl text-xs font-semibold"
+                  >
+                    Reiniciar
+                  </button>
+                </div>
+
+                {/* Abono personalizado */}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Otro monto en $ (ej. 31)"
+                    value={customSavingInput}
+                    onChange={(e) => setCustomSavingInput(e.target.value)}
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                  />
+                  <button
+                    onClick={() => abonarAlFondo(customSavingInput)}
+                    className="bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold"
+                  >
+                    Abonar
+                  </button>
+                </div>
+              </div>
+
+              {/* Gasto Acumulado por Tipo de Pago */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
                   💳 Gasto Acumulado por Tipo de Pago
@@ -1124,6 +1455,7 @@ function doPost(e) {
                 </div>
               </div>
 
+              {/* Presupuesto Operativo Mensual */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
                   📅 Presupuesto Mensual Proyectado
@@ -1137,30 +1469,14 @@ function doPost(e) {
                   <span className="font-bold text-white">${FIXED_PARKING.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-1">
-                  <span className="font-bold text-cyan-300">Total Mensual Estimado</span>
+                  <span className="font-bold text-cyan-300">Total Operativo Mensual</span>
                   <span className="font-extrabold text-emerald-400">${presupuestoOperativoTotal.toFixed(2)}</span>
                 </div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
-                  🛠️ Próximo Mantenimiento (Meta: 102,000 km)
-                </h2>
-                <p className="text-xs text-slate-300">
-                  Restan{' '}
-                  <span className="font-bold text-white">
-                    {ultimoRegistro
-                      ? toNum(ultimoRegistro.kmMantenimiento).toLocaleString()
-                      : '7,501'}{' '}
-                    km
-                  </span>{' '}
-                  para el servicio preventivo en talleres INDUCORP.
-                </p>
               </div>
             </div>
           )}
 
-          {/* PESTAÑA 4: BASE GOOGLE SHEETS */}
+          {/* PESTAÑA 5: BASE GOOGLE SHEETS */}
           {activeTab === 'sheets' && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
               <div className="flex items-center justify-between">
@@ -1346,7 +1662,7 @@ function doPost(e) {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] text-slate-400">Código Apps Script (Tanqueos + Inventario Piezas):</p>
+                    <p className="text-[11px] text-slate-400">Código Apps Script (16 cols + Piezas + Alcancía):</p>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(codigoAppsScript);
