@@ -8,27 +8,112 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Captiva LT" />
-  <meta name="theme-color" content="#020617" />
+  <meta name="theme-color" content="#181A2F" />
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2933/2933939.png" />
 
-  <title>Captiva LT 1.5 Turbo - Suite Vehicular</title>
+  <title>Captiva LT 1.5 Turbo — Suite Vehicular</title>
+
+  <!-- Tipografía Plus Jakarta Sans & JetBrains Mono para estética Fintech Premium -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              darkest: '#181A2F',
+              navy: '#242E49',
+              slate: '#37415C',
+              peach: '#FDA481',
+              crimson: '#B4182D',
+              burgundy: '#54162B',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
+    :root {
+      --bg-darkest: #181A2F;
+      --bg-navy: #242E49;
+      --bg-slate: #37415C;
+      --accent-peach: #FDA481;
+      --accent-crimson: #B4182D;
+      --accent-burgundy: #54162B;
+    }
+
     body {
-      background-color: #020617;
-      color: #f8fafc;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #181A2F;
+      background-image: 
+        radial-gradient(circle at 90% 0%, rgba(180, 24, 45, 0.22) 0%, transparent 48%),
+        radial-gradient(circle at 10% 25%, rgba(253, 164, 129, 0.10) 0%, transparent 45%),
+        linear-gradient(180deg, #181A2F 0%, #141629 100%);
+      background-attachment: fixed;
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-tap-highlight-color: transparent;
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
     }
+
     input, select, button {
       font-size: 16px !important;
+    }
+
+    /* Tarjetas con acabado de cristal esmerilado y bordes sutiles */
+    .premium-card {
+      background: linear-gradient(160deg, rgba(36, 46, 73, 0.92) 0%, rgba(24, 26, 47, 0.96) 100%);
+      border: 1px solid rgba(55, 65, 92, 0.75);
+      box-shadow: 0 18px 38px -14px rgba(10, 12, 24, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+    }
+
+    /* Tarjeta Hero con la firma cromática de la paleta (#242E49 -> #54162B -> #B4182D) */
+    .hero-card {
+      background: linear-gradient(135deg, #242E49 0%, #37415C 42%, #54162B 82%, #B4182D 100%);
+      border: 1px solid rgba(253, 164, 129, 0.35);
+      box-shadow: 0 22px 44px -12px rgba(84, 22, 43, 0.65), inset 0 1px 0 0 rgba(253, 164, 129, 0.25);
+    }
+
+    /* Botón principal con degradado cálido Durazno -> Carmesí */
+    .btn-sunset {
+      background: linear-gradient(135deg, #FDA481 0%, #B4182D 100%);
+      box-shadow: 0 10px 24px -6px rgba(180, 24, 45, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.28);
+    }
+    .btn-sunset:active {
+      transform: scale(0.985);
+    }
+
+    /* Botón secundario en Pizarra / Marino */
+    .btn-slate {
+      background: rgba(55, 65, 92, 0.55);
+      border: 1px solid rgba(253, 164, 129, 0.18);
+    }
+    .btn-slate:active {
+      background: rgba(55, 65, 92, 0.85);
+    }
+
+    /* Scrollbar oculto para navegación limpia */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #37415C;
+      border-radius: 9999px;
     }
   </style>
 </head>
@@ -165,7 +250,6 @@
         return saved ? JSON.parse(saved) : DEFAULT_KIT_ITEMS;
       });
 
-      // Alcancía de Mantenimiento 102,000 km
       const [savingsFund, setSavingsFund] = useState(() => {
         const saved = localStorage.getItem('captiva_savings_v1');
         return saved ? JSON.parse(saved) : { ahorrado: 40.00, meta: 300.00, ultimoAporte: '09/11/2026' };
@@ -192,7 +276,7 @@
       const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('captiva_gemini_key') || '');
       const [showSyncModal, setShowSyncModal] = useState(false);
       const [isSyncing, setIsSyncing] = useState(false);
-      const [syncStatus, setSyncStatus] = useState('Listo');
+      const [syncStatus, setSyncStatus] = useState('En línea');
       const [copiedScript, setCopiedScript] = useState(false);
       const [copiedText, setCopiedText] = useState('');
 
@@ -240,7 +324,7 @@
       const fetchFromGoogleSheets = async () => {
         if (!scriptUrl) return;
         setIsSyncing(true);
-        setSyncStatus('Consultando Google Sheets...');
+        setSyncStatus('Sincronizando...');
         try {
           const res = await fetch(scriptUrl + '?t=' + Date.now());
           const rawData = await res.json();
@@ -274,9 +358,9 @@
             });
             setRecords(normalized);
           }
-          setSyncStatus('Sincronizado con Google Sheets');
+          setSyncStatus('Google Sheets Activo');
         } catch (err) {
-          setSyncStatus('Usando copia local');
+          setSyncStatus('Modo Local');
         } finally {
           setIsSyncing(false);
         }
@@ -453,7 +537,7 @@
         if (!geminiKey) {
           setIsScanning(false);
           setEditHighlight(true);
-          setScanError('Falta tu Gemini API Key en "⚙️ Configurar Sync". Agrégala o completa los datos en el Paso 3.');
+          setScanError('Falta tu Gemini API Key en "⚙️ Sync". Agrégala o completa los datos en el Paso 3.');
           return;
         }
 
@@ -571,7 +655,7 @@
 
         if (scriptUrl) {
           setIsSyncing(true);
-          setSyncStatus('Subiendo a Google Sheets...');
+          setSyncStatus('Subiendo a Sheets...');
           try {
             await fetch(scriptUrl, {
               method: 'POST',
@@ -579,7 +663,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(nuevoRegistro),
             });
-            setSyncStatus('¡Guardado en Google Sheets!');
+            setSyncStatus('¡Sincronizado!');
             setTimeout(() => fetchFromGoogleSheets(), 1400);
           } catch (e) {
             setSyncStatus('Guardado local');
@@ -710,218 +794,242 @@ function doPost(e) {
 }`;
 
       return (
-        <div className="max-w-md mx-auto min-h-screen pb-24 px-3 pt-3">
-          {/* CABECERA */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 mb-3 shadow-lg">
+        <div className="max-w-md mx-auto min-h-screen pb-28 px-3.5 pt-3.5">
+          {/* CABECERA EJECUTIVA */}
+          <div className="premium-card rounded-3xl p-4 mb-3.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xl shadow">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl btn-sunset flex items-center justify-center text-xl shadow-lg">
                   ⛽
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="font-bold text-sm tracking-wide text-white">CAPTIVA LT 1.5 TURBO</h1>
-                    <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded">
+                    <h1 className="font-extrabold text-sm tracking-tight text-white">CAPTIVA LT 1.5 TURBO</h1>
+                    <span className="text-[10px] font-mono font-bold bg-[#54162B] text-[#FDA481] border border-[#FDA481]/40 px-2 py-0.5 rounded-full">
                       GTF2348
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400">
-                    {syncStatus} • Meta: <span className="text-emerald-400 font-semibold">102,000 km</span>
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FDA481] animate-pulse"></span>
+                    <p className="text-[11px] text-slate-300 font-medium">
+                      {syncStatus} • Meta: <span className="text-[#FDA481] font-bold">102,000 km</span>
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <button
-                onClick={fetchFromGoogleSheets}
-                className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl py-2 text-xs font-semibold transition"
-              >
-                <span>🔄</span> {isSyncing ? 'Consultando...' : 'Refrescar Base'}
-              </button>
-              <button
-                onClick={() => setShowSyncModal(true)}
-                className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl py-2 text-xs font-semibold transition"
-              >
-                <span>⚙️</span> Configurar Sync
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={fetchFromGoogleSheets}
+                  title="Refrescar Base"
+                  className="btn-slate hover:border-[#FDA481]/50 text-[#FDA481] rounded-2xl px-3 py-2 text-xs font-bold transition flex items-center gap-1"
+                >
+                  <span>🔄</span>
+                  <span className="hidden xs:inline">{isSyncing ? '...' : 'Sync'}</span>
+                </button>
+                <button
+                  onClick={() => setShowSyncModal(true)}
+                  title="Configuración"
+                  className="btn-slate hover:border-[#FDA481]/50 text-white rounded-2xl px-3 py-2 text-xs font-bold transition"
+                >
+                  ⚙️
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* TARJETA FIJA DEL ÚLTIMO REGISTRO EN GOOGLE SHEETS */}
-          <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/50 border border-cyan-500/30 rounded-2xl p-3.5 mb-3 shadow">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
-                📌 Último Registro en Base (Google Sheets)
+          {/* TARJETA HERO FINTECH: ÚLTIMO REGISTRO Y TELEMETRÍA EN VIVO */}
+          <div className="hero-card rounded-3xl p-4 mb-4 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#FDA481] bg-[#181A2F]/50 px-2.5 py-1 rounded-full border border-[#FDA481]/25">
+                ● Telemetría Google Sheets
               </span>
-              {ultimoRegistro && (
-                <span className="text-[11px] text-slate-300 font-medium">{ultimoRegistro.fecha}</span>
-              )}
+              <span className="text-[11px] text-white/80 font-mono">
+                {ultimoRegistro ? ultimoRegistro.fecha : '09/11/2026'}
+              </span>
             </div>
+
             {ultimoRegistro ? (
-              <div className="space-y-1.5">
-                <div className="grid grid-cols-4 gap-2 text-center bg-slate-950/60 rounded-xl p-2 border border-slate-800/80">
+              <div>
+                <div className="flex items-baseline justify-between my-1">
                   <div>
-                    <p className="text-[10px] text-slate-400">Odómetro</p>
-                    <p className="text-xs font-bold text-white">{toNum(ultimoRegistro.odometro).toLocaleString()} km</p>
+                    <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Odómetro Actual</p>
+                    <p className="text-2xl font-extrabold text-white font-mono tracking-tight">
+                      {toNum(ultimoRegistro.odometro).toLocaleString()} <span className="text-xs font-normal text-[#FDA481]">km</span>
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-slate-400">Costo Total</p>
-                    <p className="text-xs font-bold text-emerald-400">${toNum(ultimoRegistro.costoTotal).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-slate-400">Galones</p>
-                    <p className="text-xs font-bold text-cyan-300">{toNum(ultimoRegistro.galones).toFixed(3)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-slate-400">Pago</p>
-                    <p className="text-[10px] font-semibold text-amber-300 truncate">{ultimoRegistro.metodoPago}</p>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Último Tanqueo</p>
+                    <p className="text-2xl font-extrabold text-[#FDA481] font-mono">
+                      ${toNum(ultimoRegistro.costoTotal).toFixed(2)}
+                    </p>
                   </div>
                 </div>
-                <div className="flex justify-between text-[11px] text-slate-400 px-1">
-                  <span>🛞 {piezasUrgentesCount > 0 ? `${piezasUrgentesCount} urgente (Llantas)` : 'Piezas al día'}</span>
-                  <span className="text-emerald-400 font-semibold">
-                    💰 Alcancía 102k: ${toNum(savingsFund.ahorrado).toFixed(0)}/${toNum(savingsFund.meta).toFixed(0)}
+
+                <div className="grid grid-cols-3 gap-2 text-center bg-[#181A2F]/65 backdrop-blur-md rounded-2xl p-2.5 mt-2.5 border border-white/10">
+                  <div>
+                    <p className="text-[10px] text-white/60">Galones</p>
+                    <p className="text-xs font-bold text-white font-mono">{toNum(ultimoRegistro.galones).toFixed(3)} gal</p>
+                  </div>
+                  <div className="border-x border-white/10">
+                    <p className="text-[10px] text-white/60">Precio / Gal</p>
+                    <p className="text-xs font-bold text-[#FDA481] font-mono">${toNum(ultimoRegistro.precioGalon).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/60">Método Pago</p>
+                    <p className="text-[11px] font-bold text-white truncate px-1">{ultimoRegistro.metodoPago}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-white/90 mt-3 pt-2 border-t border-white/15">
+                  <span className="flex items-center gap-1 font-medium">
+                    🛞 {piezasUrgentesCount > 0 ? `${piezasUrgentesCount} alerta crítica (4 Llantas)` : 'Piezas en orden'}
+                  </span>
+                  <span className="font-bold text-[#FDA481]">
+                    🛠️ Mant. 102k en {toNum(ultimoRegistro.kmMantenimiento).toLocaleString()} km
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-400">
-                Odómetro actual: 94,499 km • Toca "Refrescar Base" para sincronizar con Google Sheets.
-              </p>
+              <div className="py-1">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-white/70">Odómetro Base</p>
+                    <p className="text-2xl font-extrabold text-white font-mono">94,499 <span className="text-xs text-[#FDA481]">km</span></p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-white/70">Próximo Servicio</p>
+                    <p className="text-sm font-bold text-[#FDA481]">En 7,501 km</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-white/75 mt-2">
+                  Toca el botón 🔄 Sync arriba a la derecha para actualizar los registros desde tu Google Sheet.
+                </p>
+              </div>
             )}
           </div>
 
-          {/* NAVEGACIÓN DE 5 PESTAÑAS */}
-          <div className="grid grid-cols-5 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 mb-3">
-            <button
-              onClick={() => setActiveTab('nuevo')}
-              className={`py-2 rounded-lg text-[10px] font-bold transition ${
-                activeTab === 'nuevo' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
-              }`}
-            >
-              ➕ Tanqueo
-            </button>
-            <button
-              onClick={() => setActiveTab('piezas')}
-              className={`py-2 rounded-lg text-[10px] font-bold transition relative ${
-                activeTab === 'piezas' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
-              }`}
-            >
-              🔧 Piezas
-              {piezasUrgentesCount > 0 && (
-                <span className="ml-0.5 px-1 bg-rose-500 text-white rounded-full text-[9px]">
-                  {piezasUrgentesCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('guantera')}
-              className={`py-2 rounded-lg text-[10px] font-bold transition ${
-                activeTab === 'guantera' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
-              }`}
-            >
-              📋 Guantera
-            </button>
-            <button
-              onClick={() => setActiveTab('reporte')}
-              className={`py-2 rounded-lg text-[10px] font-bold transition ${
-                activeTab === 'reporte' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
-              }`}
-            >
-              📊 Reporte
-            </button>
-            <button
-              onClick={() => setActiveTab('sheets')}
-              className={`py-2 rounded-lg text-[10px] font-bold transition ${
-                activeTab === 'sheets' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400'
-              }`}
-            >
-              🗂️ Base ({records.length})
-            </button>
+          {/* NAVEGACIÓN ESTILO PÍLDORA FINTECH */}
+          <div className="grid grid-cols-5 gap-1 bg-[#242E49]/95 p-1.5 rounded-2xl border border-[#37415C] mb-4 shadow-inner">
+            {[
+              { id: 'nuevo', icon: '➕', label: 'Tanqueo' },
+              { id: 'piezas', icon: '🔧', label: 'Piezas', badge: piezasUrgentesCount },
+              { id: 'guantera', icon: '🪪', label: 'Guantera' },
+              { id: 'reporte', icon: '📊', label: 'Finanzas' },
+              { id: 'sheets', icon: '🗂️', label: `Base (${records.length})` },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 rounded-xl text-[10px] font-bold transition-all relative flex flex-col items-center justify-center gap-0.5 ${
+                  activeTab === tab.id
+                    ? 'btn-sunset text-white shadow-md scale-[1.02]'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <span className="text-xs">{tab.icon}</span>
+                <span>{tab.label}</span>
+                {tab.badge > 0 && (
+                  <span className="absolute -top-1 -right-0.5 w-4 h-4 bg-[#B4182D] border border-[#FDA481] text-white rounded-full text-[9px] flex items-center justify-center font-extrabold shadow">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
 
           {/* PESTAÑA 1: NUEVO TANQUEO */}
           {activeTab === 'nuevo' && (
-            <div className="space-y-3">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                  Paso 1: Captura Factura y Tablero
-                </h2>
-
-                <div className="border border-dashed border-slate-700 rounded-xl p-3 text-center bg-slate-950/40">
-                  <p className="text-xs font-semibold text-slate-300 mb-2">🧾 Foto de la Factura</p>
-                  {invoiceImg && (
-                    <div className="mb-2">
-                      <img src={invoiceImg} alt="Factura" className="h-28 mx-auto rounded-lg object-cover border border-slate-700" />
-                      <span className="text-[11px] text-emerald-400 font-medium">✓ Factura lista</span>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" ref={invGalleryRef} className="hidden" onChange={(e) => handleImageSelect(e, 'invoice')} />
-                  <input type="file" accept="image/*" capture="environment" ref={invCamRef} className="hidden" onChange={(e) => handleImageSelect(e, 'invoice')} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => invGalleryRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 py-2 rounded-lg text-xs font-semibold">
-                      🖼️ Galería
-                    </button>
-                    <button onClick={() => invCamRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white py-2 rounded-lg text-xs font-semibold">
-                      📷 Cámara
-                    </button>
-                  </div>
+            <div className="space-y-3.5">
+              <div className="premium-card rounded-3xl p-4 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
+                    01 • Escáner Inteligente de Factura y Tablero
+                  </h2>
+                  <span className="text-[10px] text-slate-300 bg-[#37415C]/60 px-2 py-0.5 rounded-full">IA Vision</span>
                 </div>
 
-                <div className="border border-dashed border-slate-700 rounded-xl p-3 text-center bg-slate-950/40">
-                  <p className="text-xs font-semibold text-slate-300 mb-2">⏲️ Foto del Odómetro (Tablero)</p>
-                  {dashImg && (
-                    <div className="mb-2">
-                      <img src={dashImg} alt="Tablero" className="h-28 mx-auto rounded-lg object-cover border border-slate-700" />
-                      <span className="text-[11px] text-emerald-400 font-medium">✓ Tablero listo</span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Tarjeta Factura */}
+                  <div className="border border-dashed border-[#37415C] hover:border-[#FDA481]/50 rounded-2xl p-3 text-center bg-[#181A2F]/60 transition">
+                    <p className="text-xs font-bold text-white mb-2">🧾 Factura</p>
+                    {invoiceImg ? (
+                      <div className="mb-2">
+                        <img src={invoiceImg} alt="Factura" className="h-24 w-full mx-auto rounded-xl object-cover border border-[#FDA481]/40" />
+                        <span className="text-[10px] text-[#FDA481] font-bold block mt-1">✓ Imagen lista</span>
+                      </div>
+                    ) : (
+                      <div className="h-16 flex items-center justify-center text-2xl opacity-40">📄</div>
+                    )}
+                    <input type="file" accept="image/*" ref={invGalleryRef} className="hidden" onChange={(e) => handleImageSelect(e, 'invoice')} />
+                    <input type="file" accept="image/*" capture="environment" ref={invCamRef} className="hidden" onChange={(e) => handleImageSelect(e, 'invoice')} />
+                    <div className="grid grid-cols-2 gap-1.5 mt-1">
+                      <button onClick={() => invGalleryRef.current.click()} className="btn-slate text-[#FDA481] py-1.5 rounded-xl text-[11px] font-bold">
+                        Galería
+                      </button>
+                      <button onClick={() => invCamRef.current.click()} className="bg-[#37415C] text-white py-1.5 rounded-xl text-[11px] font-bold">
+                        Cámara
+                      </button>
                     </div>
-                  )}
-                  <input type="file" accept="image/*" ref={dashGalleryRef} className="hidden" onChange={(e) => handleImageSelect(e, 'dash')} />
-                  <input type="file" accept="image/*" capture="environment" ref={dashCamRef} className="hidden" onChange={(e) => handleImageSelect(e, 'dash')} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => dashGalleryRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 py-2 rounded-lg text-xs font-semibold">
-                      🖼️ Galería
-                    </button>
-                    <button onClick={() => dashCamRef.current.click()} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white py-2 rounded-lg text-xs font-semibold">
-                      📷 Cámara
-                    </button>
+                  </div>
+
+                  {/* Tarjeta Odómetro */}
+                  <div className="border border-dashed border-[#37415C] hover:border-[#FDA481]/50 rounded-2xl p-3 text-center bg-[#181A2F]/60 transition">
+                    <p className="text-xs font-bold text-white mb-2">⏲️ Tablero</p>
+                    {dashImg ? (
+                      <div className="mb-2">
+                        <img src={dashImg} alt="Tablero" className="h-24 w-full mx-auto rounded-xl object-cover border border-[#FDA481]/40" />
+                        <span className="text-[10px] text-[#FDA481] font-bold block mt-1">✓ Imagen lista</span>
+                      </div>
+                    ) : (
+                      <div className="h-16 flex items-center justify-center text-2xl opacity-40">🎛️</div>
+                    )}
+                    <input type="file" accept="image/*" ref={dashGalleryRef} className="hidden" onChange={(e) => handleImageSelect(e, 'dash')} />
+                    <input type="file" accept="image/*" capture="environment" ref={dashCamRef} className="hidden" onChange={(e) => handleImageSelect(e, 'dash')} />
+                    <div className="grid grid-cols-2 gap-1.5 mt-1">
+                      <button onClick={() => dashGalleryRef.current.click()} className="btn-slate text-[#FDA481] py-1.5 rounded-xl text-[11px] font-bold">
+                        Galería
+                      </button>
+                      <button onClick={() => dashCamRef.current.click()} className="bg-[#37415C] text-white py-1.5 rounded-xl text-[11px] font-bold">
+                        Cámara
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <button
                   onClick={extractDataFromPhotos}
                   disabled={isScanning}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs shadow-lg"
+                  className="w-full py-3.5 rounded-2xl btn-sunset text-white font-extrabold text-xs tracking-wide transition"
                 >
-                  {isScanning ? '⏳ Extrayendo datos con IA...' : '✨ Extraer Datos de las Fotos Automáticamente'}
+                  {isScanning ? '⏳ Procesando imágenes con IA...' : '✨ Extraer Datos de las Fotos Automáticamente'}
                 </button>
 
                 {scanError && (
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+                  <div className="p-3 rounded-2xl bg-[#54162B]/80 border border-[#FDA481]/40 text-[#FDA481] text-xs">
                     {scanError}
                   </div>
                 )}
               </div>
 
               {/* PASO 2: MÉTODO DE PAGO */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
-                  Paso 2: Tipo de Pago
+              <div className="premium-card rounded-3xl p-4">
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481] mb-3">
+                  02 • Método de Pago
                 </h2>
                 <div className="grid grid-cols-3 gap-2">
                   {['Tarjeta Primax', 'Tarjeta de Anthony', 'Efectivo'].map((metodo) => (
                     <button
                       key={metodo}
                       onClick={() => setForm({ ...form, metodoPago: metodo })}
-                      className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition ${
+                      className={`py-3 px-2 rounded-2xl text-xs font-bold border transition-all ${
                         form.metodoPago === metodo
-                          ? 'bg-cyan-600/30 border-cyan-400 text-white shadow'
-                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                          ? 'btn-sunset border-[#FDA481] text-white shadow-lg scale-[1.02]'
+                          : 'bg-[#181A2F]/80 border-[#37415C] text-slate-300'
                       }`}
                     >
-                      {metodo === 'Efectivo' ? '💵 ' : '💳 '}
-                      {metodo}
+                      <div className="text-sm mb-0.5">{metodo === 'Efectivo' ? '💵' : '💳'}</div>
+                      <div className="text-[11px] leading-tight">{metodo}</div>
                     </button>
                   ))}
                 </div>
@@ -929,128 +1037,131 @@ function doPost(e) {
 
               {/* PASO 3: REVISIÓN Y EDICIÓN */}
               <div
-                className={`bg-slate-900 rounded-2xl p-3.5 border transition ${
-                  editHighlight ? 'border-amber-400 shadow-lg shadow-amber-500/10' : 'border-slate-800'
+                className={`premium-card rounded-3xl p-4 transition ${
+                  editHighlight ? 'ring-2 ring-[#FDA481]' : ''
                 }`}
               >
-                <div className="flex items-center justify-between mb-2.5">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                    Paso 3: Revisar / Editar Datos y Subir
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
+                    03 • Verificación y Envío a Google Sheets
                   </h2>
-                  <span className="text-[10px] text-slate-400">100% Editable</span>
+                  <span className="text-[10px] font-semibold text-slate-300 bg-[#37415C]/60 px-2 py-0.5 rounded-full">
+                    Editable
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[11px] text-slate-400">Fecha</label>
+                    <label className="text-[11px] text-slate-300 font-medium">Fecha</label>
                     <input
                       type="text"
                       value={form.fecha}
                       onChange={(e) => setForm({ ...form, fecha: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2 text-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">Odómetro Actual (KM)</label>
+                    <label className="text-[11px] text-slate-300 font-medium">Odómetro Actual (KM)</label>
                     <input
                       type="number"
                       step="any"
                       placeholder="Ej. 94499"
                       value={form.odometro}
                       onChange={(e) => setForm({ ...form, odometro: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2 text-white font-mono font-bold"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">Recorrido (Km)</label>
+                    <label className="text-[11px] text-slate-300 font-medium">Recorrido / Trip (Km)</label>
                     <input
                       type="number"
                       step="any"
                       placeholder={tripEfectivo > 0 ? String(tripEfectivo) : 'Ej. 280'}
                       value={form.recorrido}
                       onChange={(e) => setForm({ ...form, recorrido: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2 text-white font-mono font-bold"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">Galones Comprados</label>
+                    <label className="text-[11px] text-slate-300 font-medium">Galones Comprados</label>
                     <input
                       type="number"
                       step="any"
                       placeholder="Ej. 10.343"
                       value={form.galones}
                       onChange={(e) => setForm({ ...form, galones: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2 text-white font-mono font-bold"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">Costo Total ($)</label>
+                    <label className="text-[11px] text-[#FDA481] font-bold">Costo Total Factura ($)</label>
                     <input
                       type="number"
                       step="any"
                       placeholder="Ej. 56.77"
                       value={form.costoTotal}
                       onChange={(e) => setForm({ ...form, costoTotal: e.target.value })}
-                      className="w-full bg-slate-950 border border-emerald-600/60 rounded-lg px-2.5 py-1.5 text-emerald-400 font-bold"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#FDA481]/60 focus:border-[#FDA481] outline-none rounded-xl px-3 py-2 text-[#FDA481] font-mono font-bold"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">Tipo de Gasolina</label>
+                    <label className="text-[11px] text-slate-300 font-medium">Combustible</label>
                     <select
                       value={form.tipoGasolina}
                       onChange={(e) => setForm({ ...form, tipoGasolina: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-white font-semibold"
                     >
-                      <option value="Súper">Súper</option>
+                      <option value="Súper">Súper (Premium)</option>
                       <option value="Extra / Ecopaís">Extra / Ecopaís</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">No. Factura</label>
+                    <label className="text-[11px] text-slate-300 font-medium">No. Factura</label>
                     <input
                       type="text"
                       placeholder="200-000-000016162"
                       value={form.facturaNo}
                       onChange={(e) => setForm({ ...form, facturaNo: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-white text-xs font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400">Estación Gasolinera</label>
+                    <label className="text-[11px] text-slate-300 font-medium">Estación de Servicio</label>
                     <input
                       type="text"
                       placeholder="ATIMASA S.A."
                       value={form.estacion}
                       onChange={(e) => setForm({ ...form, estacion: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-white text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1.5 bg-slate-950 rounded-xl p-2.5 mt-3 border border-slate-800 text-center">
+                {/* Resumen de telemetría calculada en tiempo real */}
+                <div className="grid grid-cols-4 gap-1.5 bg-[#181A2F] rounded-2xl p-3 mt-3.5 border border-[#37415C] text-center">
                   <div>
                     <p className="text-[10px] text-slate-400">Rendimiento</p>
-                    <p className="text-xs font-bold text-cyan-400">{rendimientoReal} km/g</p>
+                    <p className="text-xs font-bold text-[#FDA481] font-mono">{rendimientoReal}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400">Costo/km</p>
-                    <p className="text-xs font-bold text-white">${costoPorKm}</p>
+                    <p className="text-xs font-bold text-white font-mono">${costoPorKm}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400">Precio/Gal</p>
-                    <p className="text-xs font-bold text-amber-300">${precioGalon}</p>
+                    <p className="text-xs font-bold text-[#FDA481] font-mono">${precioGalon}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Próx. Mant.</p>
-                    <p className="text-xs font-bold text-emerald-400">{kmRestantesMant.toLocaleString()} km</p>
+                    <p className="text-[10px] text-slate-400">Mant. 102k</p>
+                    <p className="text-xs font-bold text-white font-mono">{kmRestantesMant.toLocaleString()}</p>
                   </div>
                 </div>
 
                 <button
                   onClick={guardarYSubirASheets}
-                  className="w-full mt-3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg"
+                  className="w-full mt-4 py-3.5 rounded-2xl btn-sunset text-white font-extrabold text-xs tracking-wide shadow-xl"
                 >
-                  ✅ Confirmar Datos y Subir a Google Sheets
+                  ✅ Confirmar y Registrar en Google Sheets
                 </button>
               </div>
             </div>
@@ -1058,15 +1169,15 @@ function doPost(e) {
 
           {/* PESTAÑA 2: INVENTARIO DE PIEZAS Y ROTACIÓN DE LLANTAS */}
           {activeTab === 'piezas' && (
-            <div className="space-y-3">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
-                <div className="flex items-center justify-between mb-2.5">
+            <div className="space-y-3.5">
+              <div className="premium-card rounded-3xl p-4">
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                      🔧 Inventario de Piezas y Rotación
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
+                      🔧 Inventario de Piezas y Desgaste
                     </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Odómetro actual: <span className="text-white font-bold">{odometroActualVehiculo.toLocaleString()} km</span>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Odómetro sincronizado: <span className="text-white font-bold font-mono">{odometroActualVehiculo.toLocaleString()} km</span>
                     </p>
                   </div>
                   <button
@@ -1086,21 +1197,21 @@ function doPost(e) {
                       });
                       setShowAddPartModal(true);
                     }}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow"
+                    className="btn-sunset text-white text-xs font-extrabold px-3.5 py-2 rounded-2xl"
                   >
-                    + Nueva Pieza
+                    + Pieza
                   </button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1.5 mt-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {['Todas', 'Urgente', 'Próximo', 'Al día'].map((st) => (
                     <button
                       key={st}
                       onClick={() => setFilterPartStatus(st)}
-                      className={`py-1.5 rounded-lg text-[11px] font-bold border transition ${
+                      className={`py-2 rounded-xl text-[11px] font-bold border transition ${
                         filterPartStatus === st
-                          ? 'bg-slate-800 border-cyan-400 text-cyan-300'
-                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                          ? 'bg-[#54162B] border-[#FDA481] text-[#FDA481]'
+                          : 'bg-[#181A2F]/80 border-[#37415C] text-slate-300'
                       }`}
                     >
                       {st}
@@ -1109,7 +1220,7 @@ function doPost(e) {
                 </div>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {filteredParts.map((pieza) => {
                   const esLlanta = pieza.id.includes('llanta') || pieza.nombre.toLowerCase().includes('llanta');
                   const kmRestantesPieza = Math.max(0, toNum(pieza.kmProximoCambio) - odometroActualVehiculo);
@@ -1117,69 +1228,68 @@ function doPost(e) {
                   const kmProximaRotacion = kmBaseRotacion + TIRE_ROTATION_INTERVAL;
                   const kmRestantesRotacion = Math.max(0, kmProximaRotacion - odometroActualVehiculo);
 
-                  const badgeColor =
+                  const badgeStyle =
                     pieza.estado === 'Urgente'
-                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                      ? 'bg-[#B4182D] text-white border-[#FDA481]'
                       : pieza.estado === 'Próximo'
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                      ? 'bg-[#54162B] text-[#FDA481] border-[#FDA481]/50'
+                      : 'bg-[#37415C]/80 text-[#FDA481] border-[#FDA481]/30';
 
                   return (
                     <div
                       key={pieza.id}
-                      className={`bg-slate-900 rounded-2xl p-3.5 border transition ${
-                        pieza.estado === 'Urgente' ? 'border-rose-500/60 shadow-lg shadow-rose-950/30' : 'border-slate-800'
+                      className={`premium-card rounded-3xl p-4 transition ${
+                        pieza.estado === 'Urgente' ? 'border-[#B4182D] ring-1 ring-[#B4182D]/60' : ''
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[#FDA481]/80">
                             {pieza.categoria}
                           </span>
-                          <h3 className="text-sm font-bold text-white">{pieza.nombre}</h3>
-                          <p className="text-[11px] text-cyan-300/90 mt-0.5">{pieza.especificacion}</p>
+                          <h3 className="text-sm font-extrabold text-white mt-0.5">{pieza.nombre}</h3>
+                          <p className="text-[11px] text-slate-300 mt-0.5">{pieza.especificacion}</p>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
-                          {pieza.estado === 'Urgente' ? '🚨 Urgente' : pieza.estado === 'Próximo' ? '⚠️ Próximo' : '✅ Al día'}
+                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${badgeStyle}`}>
+                          {pieza.estado === 'Urgente' ? '🚨 Cambiar Ahora' : pieza.estado === 'Próximo' ? '⏳ Próximo' : '✓ Al día'}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 bg-slate-950/80 rounded-xl p-2 mt-2.5 border border-slate-800/80 text-center">
+                      <div className="grid grid-cols-3 gap-2 bg-[#181A2F]/90 rounded-2xl p-2.5 mt-3 border border-[#37415C] text-center">
                         <div>
                           <p className="text-[10px] text-slate-400">Último Cambio</p>
-                          <p className="text-[11px] font-bold text-white">{pieza.fechaUltimoCambio}</p>
+                          <p className="text-[11px] font-bold text-white font-mono">{pieza.fechaUltimoCambio}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-slate-400">Próx. Cambio</p>
-                          <p className="text-[11px] font-bold text-cyan-300">
+                          <p className="text-[11px] font-bold text-[#FDA481] font-mono">
                             {pieza.estado === 'Urgente' ? '¡Inmediato!' : `En ${kmRestantesPieza.toLocaleString()} km`}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400">Costo Ref.</p>
-                          <p className="text-[11px] font-bold text-emerald-400">
+                          <p className="text-[10px] text-slate-400">Inversión Ref.</p>
+                          <p className="text-[11px] font-bold text-white font-mono">
                             ${toNum(pieza.costoEstimado).toFixed(2)}
                           </p>
                         </div>
                       </div>
 
-                      {/* Contador Especial de Rotación de Llantas cada 5,000 km */}
                       {esLlanta && (
-                        <div className="mt-2.5 bg-cyan-950/30 border border-cyan-500/30 rounded-xl p-2.5 flex items-center justify-between">
+                        <div className="mt-3 bg-gradient-to-r from-[#54162B]/80 to-[#242E49] border border-[#FDA481]/35 rounded-2xl p-3 flex items-center justify-between gap-2">
                           <div>
-                            <p className="text-[10px] font-bold uppercase text-cyan-300">
-                              🔄 Control Rotación y Balanceo (Cada 5,000 km)
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#FDA481]">
+                              🔄 Rotación y Balanceo (Cada 5,000 km)
                             </p>
-                            <p className="text-[11px] text-slate-300">
+                            <p className="text-[11px] text-white/90 mt-0.5">
                               {pieza.estado === 'Urgente'
-                                ? 'Al instalar tus 4 llantas nuevas se activará el contador +5,000 km'
+                                ? 'Se activará automáticamente a +5,000 km al registrar el cambio de tus 4 llantas.'
                                 : `Próxima rotación a los ${kmProximaRotacion.toLocaleString()} km (faltan ${kmRestantesRotacion.toLocaleString()} km)`}
                             </p>
                           </div>
                           {pieza.estado !== 'Urgente' && (
                             <button
                               onClick={() => registrarRotacionLlantas(pieza)}
-                              className="bg-cyan-600/30 border border-cyan-400 text-cyan-200 px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0"
+                              className="btn-sunset text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold shrink-0"
                             >
                               Rotar Hoy
                             </button>
@@ -1188,19 +1298,19 @@ function doPost(e) {
                       )}
 
                       {pieza.notas && (
-                        <p className="text-[11px] text-slate-400 mt-2 italic">📝 {pieza.notas}</p>
+                        <p className="text-[11px] text-slate-300 mt-2.5 italic">📝 {pieza.notas}</p>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2 mt-2.5">
+                      <div className="grid grid-cols-2 gap-2 mt-3">
                         <button
                           onClick={() => registrarCambioHoy(pieza)}
-                          className="py-1.5 px-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold"
+                          className="py-2 px-3 rounded-xl btn-sunset text-white text-[11px] font-extrabold"
                         >
                           ✓ Registrar Cambio Hoy
                         </button>
                         <button
                           onClick={() => abrirEditarPieza(pieza)}
-                          className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-semibold"
+                          className="py-2 px-3 rounded-xl btn-slate text-slate-200 text-[11px] font-bold"
                         >
                           ✏️ Editar / Estado
                         </button>
@@ -1212,117 +1322,100 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 3: GUANTERA DIGITAL (MATRÍCULA ATV + BOTIQUÍN Y KIT VIAL) */}
+          {/* PESTAÑA 3: GUANTERA DIGITAL */}
           {activeTab === 'guantera' && (
-            <div className="space-y-3">
-              {/* Ficha Técnica Oficial de Matrícula ATV Samborondón */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+            <div className="space-y-3.5">
+              <div className="premium-card rounded-3xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                      🪪 Matrícula Digital (ATV Samborondón)
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
+                      🪪 Matrícula Digital • ATV Samborondón
                     </h2>
-                    <p className="text-[11px] text-slate-400">Documento: SAM-0022246433-PAR • Sin Gravamen</p>
+                    <p className="text-[11px] text-slate-300">Doc: SAM-0022246433-PAR • Sin Gravamen</p>
                   </div>
-                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <span className="bg-[#54162B] text-[#FDA481] border border-[#FDA481]/40 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
                     Vigente 2031
                   </span>
                 </div>
 
                 {copiedText && (
-                  <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-center py-1 rounded-lg text-[11px] font-bold">
+                  <div className="bg-[#54162B] border border-[#FDA481] text-[#FDA481] text-center py-1.5 rounded-xl text-xs font-bold">
                     ✓ {copiedText} copiado al portapapeles
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div
                     onClick={() => copiarDato('LZWADAGAXLB008514', 'Chasis / VIN')}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 cursor-pointer active:bg-slate-800"
+                    className="bg-[#181A2F] border border-[#37415C] hover:border-[#FDA481] rounded-2xl p-3 cursor-pointer transition"
                   >
-                    <p className="text-[10px] text-slate-400 flex justify-between">
+                    <p className="text-[10px] text-slate-400 flex justify-between font-bold">
                       <span>CHASIS / VIN</span>
-                      <span className="text-cyan-400">📋 Copiar</span>
+                      <span className="text-[#FDA481]">📋 Copiar</span>
                     </p>
-                    <p className="font-mono font-bold text-white text-[11px] mt-0.5">LZWADAGAXLB008514</p>
+                    <p className="font-mono font-bold text-white text-[11px] mt-1">LZWADAGAXLB008514</p>
                   </div>
 
                   <div
                     onClick={() => copiarDato('LJO18K81420455', 'Número de Motor')}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 cursor-pointer active:bg-slate-800"
+                    className="bg-[#181A2F] border border-[#37415C] hover:border-[#FDA481] rounded-2xl p-3 cursor-pointer transition"
                   >
-                    <p className="text-[10px] text-slate-400 flex justify-between">
+                    <p className="text-[10px] text-slate-400 flex justify-between font-bold">
                       <span>MOTOR</span>
-                      <span className="text-cyan-400">📋 Copiar</span>
+                      <span className="text-[#FDA481]">📋 Copiar</span>
                     </p>
-                    <p className="font-mono font-bold text-white text-[11px] mt-0.5">LJO18K81420455</p>
+                    <p className="font-mono font-bold text-white text-[11px] mt-1">LJO18K81420455</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center bg-slate-950/70 rounded-xl p-2 border border-slate-800 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-center bg-[#181A2F]/90 rounded-2xl p-2.5 border border-[#37415C] text-xs">
                   <div>
                     <p className="text-[10px] text-slate-400">Dígito Placa (8)</p>
-                    <p className="font-bold text-amber-300 text-[11px]">RTV: Septiembre</p>
+                    <p className="font-bold text-[#FDA481] text-[11px]">RTV: Septiembre</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Últ. Matrícula</p>
-                    <p className="font-bold text-white text-[11px]">07-OCT-2026</p>
+                    <p className="text-[10px] text-slate-400">Emisión</p>
+                    <p className="font-bold text-white text-[11px] font-mono">07-OCT-2026</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Caduca</p>
-                    <p className="font-bold text-emerald-400 text-[11px]">06-OCT-2031</p>
+                    <p className="text-[10px] text-slate-400">Caducidad</p>
+                    <p className="font-bold text-[#FDA481] text-[11px] font-mono">06-OCT-2031</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center bg-slate-950/40 rounded-xl p-2 border border-slate-800/60 text-[11px]">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Cilindraje</span>
-                    <span className="font-bold text-white">1451 CC (Turbo)</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Clase / Color</span>
-                    <span className="font-bold text-white">Jeep • Blanco</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Capacidad</span>
-                    <span className="font-bold text-white">5 Pasajeros</span>
-                  </div>
-                </div>
-
-                {/* Enlaces Rápidos de Consulta Vehicular en Ecuador */}
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <a
                     href="https://srienlinea.sri.gob.ec/sri-en-linea/SriVehiculosWeb/ConsultaValoresPagarVehiculos/Consultas/consultaRubros"
                     target="_blank"
                     rel="noreferrer"
-                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 rounded-xl py-2 text-center text-[11px] font-bold"
+                    className="btn-slate text-[#FDA481] rounded-2xl py-2.5 text-center text-xs font-bold"
                   >
-                    🏛️ Consultar Valor SRI
+                    🏛️ Valores SRI
                   </a>
                   <a
                     href="https://www.atvsamborondon.gob.ec/"
                     target="_blank"
                     rel="noreferrer"
-                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 rounded-xl py-2 text-center text-[11px] font-bold"
+                    className="btn-slate text-white rounded-2xl py-2.5 text-center text-xs font-bold"
                   >
                     🚦 Portal ATV / Multas
                   </a>
                 </div>
               </div>
 
-              {/* Checklist de Botiquín y Kit de Seguridad Vial RTV */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+              {/* Botiquín y Kit Vial */}
+              <div className="premium-card rounded-3xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
                       🧰 Botiquín y Kit Vial (Normativa RTV)
                     </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Toca cualquier ítem para marcar/desmarcar o verificar su vigencia
+                    <p className="text-[11px] text-slate-300">
+                      Toca cualquier insumo para verificar su estado o recarga
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-cyan-300">
-                    {kitItems.filter((k) => k.listo).length}/{kitItems.length} listos
+                  <span className="text-xs font-extrabold text-[#FDA481] bg-[#54162B] px-2.5 py-1 rounded-full border border-[#FDA481]/30">
+                    {kitItems.filter((k) => k.listo).length}/{kitItems.length}
                   </span>
                 </div>
 
@@ -1335,18 +1428,20 @@ function doPost(e) {
                           prev.map((k) => (k.id === item.id ? { ...k, listo: !k.listo } : k))
                         )
                       }
-                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${
+                      className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition ${
                         item.listo
-                          ? 'bg-slate-950/90 border-slate-800'
-                          : 'bg-rose-950/20 border-rose-500/40'
+                          ? 'bg-[#181A2F]/90 border-[#37415C]'
+                          : 'bg-[#54162B]/60 border-[#B4182D]'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-base">{item.listo ? '✅' : '⚠️'}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#242E49] border border-[#FDA481]/40 text-[#FDA481]">
+                          {item.listo ? '✓' : '!'}
+                        </span>
                         <div>
                           <p className="text-xs font-bold text-white">{item.nombre}</p>
                           <p className="text-[10px] text-slate-400">
-                            {item.categoria} • Vence/Recarga: <span className="text-amber-300 font-semibold">{item.vencimiento}</span>
+                            {item.categoria} • Vigencia: <span className="text-[#FDA481] font-semibold">{item.vencimiento}</span>
                           </p>
                         </div>
                       </div>
@@ -1357,51 +1452,53 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 4: REPORTE MENSUAL + ALCANCÍA DE MANTENIMIENTO */}
+          {/* PESTAÑA 4: FINANZAS, REPORTE MENSUAL Y ALCANCÍA 102,000 KM */}
           {activeTab === 'reporte' && (
-            <div className="space-y-3">
-              {/* Alcancía Interactiva para Mantenimiento Mayor 102,000 km */}
-              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/40 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+            <div className="space-y-3.5">
+              {/* Alcancía Interactiva estilo Fintech */}
+              <div className="hero-card rounded-3xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                      💰 Alcancía Mantenimiento Mayor (102,000 km)
-                    </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Faltan <span className="text-white font-bold">{kmFaltantes102k.toLocaleString()} km</span> (~{mesesEstimadosMant} meses) • Sugerido: $31 a $40/mes
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#FDA481]">
+                      💰 Fondo Mantenimiento 102,000 km
+                    </span>
+                    <p className="text-xs text-white/85 mt-0.5">
+                      Restan <span className="text-white font-bold font-mono">{kmFaltantes102k.toLocaleString()} km</span> (~{mesesEstimadosMant} meses)
                     </p>
                   </div>
-                  <span className="text-xs font-extrabold text-emerald-300">
-                    ${toNum(savingsFund.ahorrado).toFixed(2)} / ${toNum(savingsFund.meta).toFixed(0)}
-                  </span>
+                  <div className="text-right">
+                    <p className="text-xl font-extrabold text-[#FDA481] font-mono">
+                      ${toNum(savingsFund.ahorrado).toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-white/75">Meta: ${toNum(savingsFund.meta).toFixed(0)}</p>
+                  </div>
                 </div>
 
-                {/* Barra de progreso */}
-                <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                {/* Barra de progreso con brillo */}
+                <div className="w-full h-3 bg-[#181A2F]/80 rounded-full overflow-hidden border border-white/15 p-0.5">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-300"
+                    className="h-full rounded-full bg-gradient-to-r from-[#FDA481] to-[#B4182D] transition-all duration-500"
                     style={{ width: `${porcentajeAhorro}%` }}
                   />
                 </div>
 
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Avance del fondo: {porcentajeAhorro}%</span>
+                <div className="flex justify-between text-[10px] text-white/80 font-medium">
+                  <span>Progreso: {porcentajeAhorro}% completado</span>
                   <span>Último abono: {savingsFund.ultimoAporte}</span>
                 </div>
 
-                {/* Botones rápidos de aporte quincenal y mensual */}
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   <button
                     onClick={() => abonarAlFondo(20)}
-                    className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 py-2 rounded-xl text-xs font-bold"
+                    className="bg-[#181A2F]/75 hover:bg-[#181A2F] border border-[#FDA481]/40 text-[#FDA481] py-2 rounded-xl text-xs font-extrabold"
                   >
-                    +$20 (Quincena)
+                    +$20 Quincena
                   </button>
                   <button
                     onClick={() => abonarAlFondo(40)}
-                    className="bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 py-2 rounded-xl text-xs font-bold"
+                    className="bg-[#181A2F]/75 hover:bg-[#181A2F] border border-[#FDA481]/40 text-white py-2 rounded-xl text-xs font-extrabold"
                   >
-                    +$40 (Mes)
+                    +$40 Mes
                   </button>
                   <button
                     onClick={() => {
@@ -1409,68 +1506,67 @@ function doPost(e) {
                         setSavingsFund({ ...savingsFund, ahorrado: 0 });
                       }
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 py-2 rounded-xl text-xs font-semibold"
+                    className="bg-[#181A2F]/50 border border-white/15 text-white/75 py-2 rounded-xl text-xs font-semibold"
                   >
                     Reiniciar
                   </button>
                 </div>
 
-                {/* Abono personalizado */}
                 <div className="flex gap-2 pt-1">
                   <input
                     type="number"
                     step="any"
-                    placeholder="Otro monto en $ (ej. 31)"
+                    placeholder="Abonar otro monto ($)"
                     value={customSavingInput}
                     onChange={(e) => setCustomSavingInput(e.target.value)}
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                    className="flex-1 bg-[#181A2F]/90 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder-white/50 outline-none"
                   />
                   <button
                     onClick={() => abonarAlFondo(customSavingInput)}
-                    className="bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold"
+                    className="bg-[#FDA481] text-[#181A2F] px-4 py-2 rounded-xl text-xs font-extrabold"
                   >
                     Abonar
                   </button>
                 </div>
               </div>
 
-              {/* Gasto Acumulado por Tipo de Pago */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
-                  💳 Gasto Acumulado por Tipo de Pago
+              {/* Desglose por Método de Pago */}
+              <div className="premium-card rounded-3xl p-4">
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481] mb-3">
+                  💳 Gasto Acumulado por Método de Pago
                 </h2>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
-                    <p className="text-[10px] text-slate-400">Tarjeta Primax</p>
-                    <p className="text-sm font-bold text-cyan-400 mt-1">${totalPrimax.toFixed(2)}</p>
+                <div className="grid grid-cols-3 gap-2.5 text-center">
+                  <div className="bg-[#181A2F] border border-[#37415C] rounded-2xl p-3">
+                    <p className="text-[10px] text-slate-400 font-semibold">Tarjeta Primax</p>
+                    <p className="text-sm font-extrabold text-[#FDA481] font-mono mt-1">${totalPrimax.toFixed(2)}</p>
                   </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
-                    <p className="text-[10px] text-slate-400">Tarjeta Anthony</p>
-                    <p className="text-sm font-bold text-amber-400 mt-1">${totalAnthony.toFixed(2)}</p>
+                  <div className="bg-[#181A2F] border border-[#37415C] rounded-2xl p-3">
+                    <p className="text-[10px] text-slate-400 font-semibold">Tarjeta Anthony</p>
+                    <p className="text-sm font-extrabold text-white font-mono mt-1">${totalAnthony.toFixed(2)}</p>
                   </div>
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
-                    <p className="text-[10px] text-slate-400">Efectivo</p>
-                    <p className="text-sm font-bold text-emerald-400 mt-1">${totalEfectivo.toFixed(2)}</p>
+                  <div className="bg-[#181A2F] border border-[#37415C] rounded-2xl p-3">
+                    <p className="text-[10px] text-slate-400 font-semibold">Efectivo</p>
+                    <p className="text-sm font-extrabold text-[#FDA481] font-mono mt-1">${totalEfectivo.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
 
               {/* Presupuesto Operativo Mensual */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <div className="premium-card rounded-3xl p-4 space-y-2.5">
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
                   📅 Presupuesto Mensual Proyectado
                 </h2>
-                <div className="flex justify-between text-xs py-1 border-b border-slate-800">
-                  <span className="text-slate-400">Gasolina Súper proyectada (1,145 km/mes)</span>
-                  <span className="font-bold text-white">${gastoGasolinaMensualProyectado.toFixed(2)}</span>
+                <div className="flex justify-between text-xs py-1.5 border-b border-[#37415C]/60">
+                  <span className="text-slate-300">Gasolina Súper proyectada (1,145 km/mes)</span>
+                  <span className="font-bold text-white font-mono">${gastoGasolinaMensualProyectado.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-xs py-1 border-b border-slate-800">
-                  <span className="text-slate-400">Parqueo mensual fijo</span>
-                  <span className="font-bold text-white">${FIXED_PARKING.toFixed(2)}</span>
+                <div className="flex justify-between text-xs py-1.5 border-b border-[#37415C]/60">
+                  <span className="text-slate-300">Parqueo mensual fijo</span>
+                  <span className="font-bold text-white font-mono">${FIXED_PARKING.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-1">
-                  <span className="font-bold text-cyan-300">Total Operativo Mensual</span>
-                  <span className="font-extrabold text-emerald-400">${presupuestoOperativoTotal.toFixed(2)}</span>
+                  <span className="font-extrabold text-white">Total Operativo Mensual</span>
+                  <span className="font-extrabold text-[#FDA481] font-mono">${presupuestoOperativoTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -1478,28 +1574,28 @@ function doPost(e) {
 
           {/* PESTAÑA 5: BASE GOOGLE SHEETS */}
           {activeTab === 'sheets' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+            <div className="premium-card rounded-3xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                  Registros en Google Sheets ({records.length})
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
+                  🗂️ Historial en Google Sheets ({records.length})
                 </h2>
               </div>
 
               {records.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">No hay registros cargados.</p>
+                <p className="text-xs text-slate-400 py-6 text-center">No hay registros sincronizados aún.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {records.map((r, i) => (
-                    <div key={r.id || i} className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs space-y-1">
+                    <div key={r.id || i} className="bg-[#181A2F] border border-[#37415C] rounded-2xl p-3 text-xs space-y-1">
                       <div className="flex justify-between font-bold text-white">
-                        <span>{r.fecha} • {toNum(r.odometro).toLocaleString()} km</span>
-                        <span className="text-emerald-400">${toNum(r.costoTotal).toFixed(2)}</span>
+                        <span className="font-mono">{r.fecha} • {toNum(r.odometro).toLocaleString()} km</span>
+                        <span className="text-[#FDA481] font-mono font-extrabold">${toNum(r.costoTotal).toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-[11px] text-slate-400">
-                        <span>{toNum(r.galones).toFixed(3)} gal (${toNum(r.precioGalon).toFixed(2)}/gal)</span>
-                        <span className="text-amber-300 font-semibold">{r.metodoPago}</span>
+                      <div className="flex justify-between text-[11px] text-slate-300">
+                        <span className="font-mono">{toNum(r.galones).toFixed(3)} gal (${toNum(r.precioGalon).toFixed(2)}/gal)</span>
+                        <span className="text-[#FDA481] font-semibold">{r.metodoPago}</span>
                       </div>
-                      <div className="flex justify-between text-[10px] text-slate-500">
+                      <div className="flex justify-between text-[10px] text-slate-400">
                         <span>{r.estacion} ({r.facturaNo})</span>
                         <span>Mant. en {toNum(r.kmMantenimiento).toLocaleString()} km</span>
                       </div>
@@ -1510,15 +1606,15 @@ function doPost(e) {
             </div>
           )}
 
-          {/* MODAL PARA AGREGAR O EDITAR PIEZA DEL INVENTARIO */}
+          {/* MODAL PARA AGREGAR O EDITAR PIEZA */}
           {showAddPartModal && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
-                <h3 className="font-bold text-sm text-cyan-400">
-                  {editingPart ? '✏️ Editar Pieza / Repuesto' : '➕ Agregar Pieza al Inventario'}
+            <div className="fixed inset-0 bg-[#181A2F]/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
+              <div className="premium-card rounded-3xl p-5 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
+                <h3 className="font-extrabold text-sm text-[#FDA481]">
+                  {editingPart ? '✏️ Editar Pieza / Repuesto' : '➕ Nueva Pieza del Inventario'}
                 </h3>
 
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <div>
                     <label className="text-[11px] text-slate-300">Nombre de la Pieza</label>
                     <input
@@ -1526,7 +1622,7 @@ function doPost(e) {
                       placeholder="Ej. Juego de 4 Llantas"
                       value={partForm.nombre}
                       onChange={(e) => setPartForm({ ...partForm, nombre: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1535,11 +1631,11 @@ function doPost(e) {
                       <select
                         value={partForm.estado}
                         onChange={(e) => setPartForm({ ...partForm, estado: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                        className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                       >
                         <option value="Urgente">🚨 Urgente (Cambiar)</option>
-                        <option value="Próximo">⚠️ Próximo</option>
-                        <option value="Al día">✅ Al día</option>
+                        <option value="Próximo">⏳ Próximo</option>
+                        <option value="Al día">✓ Al día</option>
                       </select>
                     </div>
                     <div>
@@ -1548,7 +1644,7 @@ function doPost(e) {
                         type="text"
                         value={partForm.fechaUltimoCambio}
                         onChange={(e) => setPartForm({ ...partForm, fechaUltimoCambio: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                        className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                       />
                     </div>
                   </div>
@@ -1559,7 +1655,7 @@ function doPost(e) {
                       placeholder='Ej. 215/60 R17 o Piloto 24" / Copiloto 16"'
                       value={partForm.especificacion}
                       onChange={(e) => setPartForm({ ...partForm, especificacion: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -1569,7 +1665,7 @@ function doPost(e) {
                         type="number"
                         value={partForm.kmUltimoCambio}
                         onChange={(e) => setPartForm({ ...partForm, kmUltimoCambio: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                        className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-2.5 py-2 text-xs text-white font-mono"
                       />
                     </div>
                     <div>
@@ -1578,7 +1674,7 @@ function doPost(e) {
                         type="number"
                         value={partForm.kmProximoCambio}
                         onChange={(e) => setPartForm({ ...partForm, kmProximoCambio: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                        className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-2.5 py-2 text-xs text-white font-mono"
                       />
                     </div>
                     <div>
@@ -1588,7 +1684,7 @@ function doPost(e) {
                         step="any"
                         value={partForm.costoEstimado}
                         onChange={(e) => setPartForm({ ...partForm, costoEstimado: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                        className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-2.5 py-2 text-xs text-white font-mono"
                       />
                     </div>
                   </div>
@@ -1599,21 +1695,21 @@ function doPost(e) {
                       placeholder="Ej. Cambiadas hace 2 semanas"
                       value={partForm.notas}
                       onChange={(e) => setPartForm({ ...partForm, notas: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                      className="w-full mt-1 bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="grid grid-cols-2 gap-2.5 pt-2">
                   <button
                     onClick={() => setShowAddPartModal(false)}
-                    className="py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs"
+                    className="py-2.5 btn-slate text-slate-200 font-bold rounded-2xl text-xs"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={guardarPiezaModal}
-                    className="py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-xs"
+                    className="py-2.5 btn-sunset text-white font-extrabold rounded-2xl text-xs"
                   >
                     Guardar Pieza
                   </button>
@@ -1624,9 +1720,9 @@ function doPost(e) {
 
           {/* MODAL DE CONFIGURACIÓN SYNC */}
           {showSyncModal && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
-                <h3 className="font-bold text-sm text-cyan-400">⚙️ Conexión con Google Sheets e IA</h3>
+            <div className="fixed inset-0 bg-[#181A2F]/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
+              <div className="premium-card rounded-3xl p-5 max-w-md w-full space-y-3.5 max-h-[90vh] overflow-y-auto">
+                <h3 className="font-extrabold text-sm text-[#FDA481]">⚙️ Conexión Google Sheets & Gemini IA</h3>
 
                 <div>
                   <label className="text-[11px] text-slate-300 block mb-1">
@@ -1640,13 +1736,13 @@ function doPost(e) {
                       setScriptUrl(e.target.value);
                       localStorage.setItem('captiva_script_url', e.target.value);
                     }}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    className="w-full bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                   />
                 </div>
 
                 <div>
                   <label className="text-[11px] text-slate-300 block mb-1">
-                    2. Gemini API Key (De aistudio.google.com/app/apikey):
+                    2. Gemini API Key (aistudio.google.com/app/apikey):
                   </label>
                   <input
                     type="password"
@@ -1656,25 +1752,25 @@ function doPost(e) {
                       setGeminiKey(e.target.value);
                       localStorage.setItem('captiva_gemini_key', e.target.value);
                     }}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    className="w-full bg-[#181A2F] border border-[#37415C] rounded-xl px-3 py-2 text-xs text-white"
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] text-slate-400">Código Apps Script (16 cols + Piezas + Alcancía):</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] text-slate-300">Código Apps Script (16 cols + Piezas + Alcancía):</p>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(codigoAppsScript);
                         setCopiedScript(true);
                         setTimeout(() => setCopiedScript(false), 2000);
                       }}
-                      className="text-[11px] bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 px-2 py-0.5 rounded-lg font-semibold"
+                      className="text-[11px] bg-[#54162B] border border-[#FDA481]/50 text-[#FDA481] px-2.5 py-1 rounded-xl font-bold"
                     >
                       {copiedScript ? '✓ Copiado' : '📋 Copiar código'}
                     </button>
                   </div>
-                  <pre className="bg-slate-950 p-2 rounded-lg text-[10px] text-cyan-300 overflow-x-auto border border-slate-800 select-all">
+                  <pre className="bg-[#181A2F] p-2.5 rounded-2xl text-[10px] text-[#FDA481] overflow-x-auto border border-[#37415C] select-all font-mono">
                     {codigoAppsScript}
                   </pre>
                 </div>
@@ -1684,9 +1780,9 @@ function doPost(e) {
                     setShowSyncModal(false);
                     fetchFromGoogleSheets();
                   }}
-                  className="w-full py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-xs"
+                  className="w-full py-3 btn-sunset text-white font-extrabold rounded-2xl text-xs"
                 >
-                  Guardar y Refrescar Base
+                  Guardar y Sincronizar Base
                 </button>
               </div>
             </div>
