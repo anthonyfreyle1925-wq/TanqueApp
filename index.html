@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Captiva LT" />
   <meta name="theme-color" content="#181A2F" />
   
-  <!-- Ícono de Pantalla de Inicio Dinámico (Se genera en HD al cargar) -->
+  <!-- Ícono de Pantalla de Inicio Dinámico en HD -->
   <link id="apple-icon-link" rel="apple-touch-icon" sizes="180x180" href="" />
   <link id="fav-icon-link" rel="icon" type="image/png" href="" />
 
@@ -89,7 +89,7 @@
     })();
   </script>
 
-  <title>Captiva LT 1.5 Turbo — Suite Vehicular & Matías IA</title>
+  <title>Captiva LT 1.5 Turbo — Suite Vehicular & Mathias IA</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -159,7 +159,7 @@
       box-shadow: 0 10px 24px -6px rgba(180, 24, 45, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.28);
     }
     .btn-sunset:active {
-      transform: scale(0.985);
+      transform: scale(0.97);
     }
 
     .btn-slate {
@@ -191,7 +191,56 @@
     const FIXED_PARKING = 48.88;
     const TIRE_ROTATION_INTERVAL = 5000;
 
-    // Iconografía Vectorial Minimalista
+    // Lista de modelos Gemini con respaldo automático (Incluye gemini-3-flash-preview para nuevos usuarios)
+    const GEMINI_MODELS = [
+      'gemini-3-flash-preview',
+      'gemini-3.1-flash-lite-preview',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash'
+    ];
+
+    async function callGeminiWithFallback(apiKey, payload) {
+      let lastError = null;
+      for (const modelName of GEMINI_MODELS) {
+        try {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey.trim()}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }
+          );
+          const data = await response.json();
+          if (!data.error) {
+            return data;
+          }
+          lastError = data.error;
+          // Si falla por Google Search tool en un modelo específico, probamos sin tools en el mismo modelo antes de saltar
+          if (payload.tools) {
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.tools;
+            const retryRes = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey.trim()}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fallbackPayload)
+              }
+            );
+            const retryData = await retryRes.json();
+            if (!retryData.error) {
+              return retryData;
+            }
+          }
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw new Error(lastError?.message || 'No se pudo conectar con la API de Gemini.');
+    }
+
+    // Iconografía Vectorial Minimalista (22x22 px para barra de solo íconos)
     const IconGauge = () => (
       <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 14l4-4" />
@@ -200,7 +249,7 @@
     );
 
     const IconPlus = () => (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="9" />
         <line x1="12" y1="8" x2="12" y2="16" />
         <line x1="8" y1="12" x2="16" y2="12" />
@@ -208,36 +257,36 @@
     );
 
     const IconWrench = () => (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
       </svg>
     );
 
     const IconShield = () => (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     );
 
     const IconChart = () => (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     );
 
-    const IconDatabase = () => (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="12" cy="5" rx="9" ry="3" />
-        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+    const IconSparkles = () => (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
       </svg>
     );
 
-    const IconSparkles = () => (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
+    const IconDatabase = () => (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3" />
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
       </svg>
     );
 
@@ -369,18 +418,18 @@
       });
       const [customSavingInput, setCustomSavingInput] = useState('');
 
-      // Estado del Agente Virtual Matías
-      const [matiasMessages, setMatiasMessages] = useState(() => {
-        const saved = localStorage.getItem('captiva_matias_chat_v1');
+      // Estado del Agente Virtual Mathias
+      const [mathiasMessages, setMathiasMessages] = useState(() => {
+        const saved = localStorage.getItem('captiva_mathias_chat_v2');
         return saved ? JSON.parse(saved) : [
           {
             role: 'assistant',
-            text: '¡Hola Anthony! Soy Matías, tu copiloto e ingeniero mecánico personal para la Chevrolet Captiva LT 1.5 Turbo (GTF2348). Estoy conectado en vivo a tu Google Sheets, a tu inventario de piezas y a internet. ¿Qué deseas consultar hoy?'
+            text: '¡Hola Anthony! Soy Mathias, tu copiloto e ingeniero mecánico personal para la Chevrolet Captiva LT 1.5 Turbo (GTF2348). Estoy conectado en vivo a tu Google Sheets, a tu inventario de piezas y a internet con el nuevo motor Gemini 3. ¿Qué deseas consultar hoy?'
           }
         ];
       });
-      const [matiasInput, setMatiasInput] = useState('');
-      const [isMatiasTyping, setIsMatiasTyping] = useState(false);
+      const [mathiasInput, setMathiasInput] = useState('');
+      const [isMathiasTyping, setIsMathiasTyping] = useState(false);
       const [useWebSearch, setUseWebSearch] = useState(true);
       const chatEndRef = useRef(null);
 
@@ -450,11 +499,11 @@
       }, [savingsFund]);
 
       useEffect(() => {
-        localStorage.setItem('captiva_matias_chat_v1', JSON.stringify(matiasMessages));
-        if (activeTab === 'matias') {
+        localStorage.setItem('captiva_mathias_chat_v2', JSON.stringify(mathiasMessages));
+        if (activeTab === 'mathias') {
           setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         }
-      }, [matiasMessages, activeTab]);
+      }, [mathiasMessages, activeTab]);
 
       const fetchFromGoogleSheets = async () => {
         if (!scriptUrl) return;
@@ -531,6 +580,32 @@
       const gastoGasolinaMensualProyectado = costoKmPromedio * MONTHLY_AVG_KM;
       const presupuestoOperativoTotal = gastoGasolinaMensualProyectado + FIXED_PARKING;
 
+      // Cálculo de gasto del mes en curso para la barra de avance en la plaqueta de inicio
+      const now = new Date();
+      const currentMonthNum = now.getMonth() + 1;
+      const gastoGasolinaMesActual = records.reduce((acc, r) => {
+        const partesFecha = String(r.fecha || '').split('/');
+        const mesRegistro = partesFecha.length >= 2 ? parseInt(partesFecha[1], 10) : currentMonthNum;
+        if (mesRegistro === currentMonthNum) {
+          return acc + toNum(r.costoTotal);
+        }
+        return acc;
+      }, 0);
+
+      // Si no hay registros con fecha de este mes pero existe un último registro, usamos el último tanqueo como referencia activa
+      const gasolinaEjecutadaMes =
+        gastoGasolinaMesActual > 0
+          ? gastoGasolinaMesActual
+          : ultimoRegistro
+          ? toNum(ultimoRegistro.costoTotal)
+          : 56.77;
+
+      const gastoOperativoEjecutadoMes = gasolinaEjecutadaMes + FIXED_PARKING;
+      const porcentajePresupuestoMes = Math.min(
+        100,
+        Math.round((gastoOperativoEjecutadoMes / presupuestoOperativoTotal) * 100)
+      );
+
       const piezasUrgentesCount = parts.filter((p) => p.estado === 'Urgente').length;
       const filteredParts = filterPartStatus === 'Todas' ? parts : parts.filter((p) => p.estado === filterPartStatus);
 
@@ -538,23 +613,23 @@
       const mesesEstimadosMant = (kmFaltantes102k / MONTHLY_AVG_KM).toFixed(1);
       const porcentajeAhorro = Math.min(100, Math.round((toNum(savingsFund.ahorrado) / toNum(savingsFund.meta)) * 100));
 
-      // Función del Agente Virtual Matías
-      const askMatias = async (customPrompt) => {
-        const question = (customPrompt !== undefined ? customPrompt : matiasInput).trim();
+      // Función del Agente Virtual Mathias (Actualizado a Gemini 3 con fallback automático)
+      const askMathias = async (customPrompt) => {
+        const question = (customPrompt !== undefined ? customPrompt : mathiasInput).trim();
         if (!question) return;
 
-        const updatedChat = [...matiasMessages, { role: 'user', text: question }];
-        setMatiasMessages(updatedChat);
-        if (customPrompt === undefined) setMatiasInput('');
-        setIsMatiasTyping(true);
+        const updatedChat = [...mathiasMessages, { role: 'user', text: question }];
+        setMathiasMessages(updatedChat);
+        if (customPrompt === undefined) setMathiasInput('');
+        setIsMathiasTyping(true);
 
         if (!geminiKey) {
-          setIsMatiasTyping(false);
-          setMatiasMessages([
+          setIsMathiasTyping(false);
+          setMathiasMessages([
             ...updatedChat,
             {
               role: 'assistant',
-              text: 'Para poder responderte y analizar tu Google Sheet o buscar en internet, por favor ingresa tu Gemini API Key tocando el botón de Ajustes (⚙️ arriba a la derecha).'
+              text: 'Para poder responderte y analizar tu Google Sheet o buscar en internet, por favor ingresa tu Gemini API Key tocando el botón de Ajustes (arriba a la derecha).'
             }
           ]);
           return;
@@ -573,6 +648,12 @@
             proximoMantenimientoMeta: '102,000 km',
             odometroActual: odometroActualVehiculo,
             kmRestantesPara102k: kmFaltantes102k,
+            rutinaConduccion: {
+              rutaTrabajoDiariaIdaYVuelta: '38.4 km (La Joya a Arcos Plaza 2)',
+              costoPorKmActual: Number(costoKmPromedio.toFixed(4)),
+              ahorroDiarioSiNoMueveElCarroAlTrabajo: Number((38.4 * costoKmPromedio).toFixed(2)),
+              promedioMensualKm: MONTHLY_AVG_KM
+            },
             resumenFinanciero: {
               gastoTarjetaPrimax: totalPrimax,
               gastoTarjetaAnthony: totalAnthony,
@@ -580,6 +661,8 @@
               parqueoFijoMensual: FIXED_PARKING,
               gasolinaMensualProyectada: Number(gastoGasolinaMensualProyectado.toFixed(2)),
               presupuestoOperativoMensualTotal: Number(presupuestoOperativoTotal.toFixed(2)),
+              ejecutadoEsteMesConParqueo: Number(gastoOperativoEjecutadoMes.toFixed(2)),
+              porcentajeAvancePresupuestoMensual: porcentajePresupuestoMes + '%',
               alcanciaMantenimiento102k: savingsFund
             },
             registrosGoogleSheets: records.slice(0, 15),
@@ -587,14 +670,14 @@
             botiquinYKitVial: kitItems
           };
 
-          const systemPrompt = `Eres Matías, el Agente Virtual Personal, Analista Financiero y Mecánico Experto de cabecera de Anthony para su Chevrolet Captiva LT Turbo 1.5 (año 2020) en Guayaquil, Ecuador.
+          const systemPrompt = `Eres Mathias, el Agente Virtual Personal, Analista Financiero y Mecánico Experto de cabecera de Anthony para su Chevrolet Captiva LT Turbo 1.5 (año 2020) en Guayaquil, Ecuador.
 Tienes acceso directo y en tiempo real a los datos de su aplicación vinculados con su Google Sheets:
 ${JSON.stringify(contextoVehicular)}
 
-Reglas de comportamiento de Matías:
-1. Responde siempre en español con tono cercano, ejecutivo, claro y directo. Llámalo por su nombre (Anthony) cuando sea natural.
-2. Si pregunta sobre sus tanqueos, gastos por tarjeta (Primax, Anthony, Efectivo), odómetro, rendimiento, alcancía o inventario de piezas, usa los datos exactos del JSON de arriba.
-3. Si pregunta sobre mecánica, ruidos, fallas, repuestos, llantas (215/60 R17), aceite (5W-30 sintético DEXOS1), plumas (24", 16", 10" J-Hook), normativas de tránsito en Ecuador (ATM, ATV Samborondón, SRI) o cualquier duda general, dale respuestas técnicas precisas adaptadas al motor 1.5 Turbo y al clima cálido de Guayaquil.`;
+Reglas de comportamiento de Mathias:
+1. Tu nombre es Mathias (con "th"). Responde siempre en español con tono cercano, ejecutivo, claro y directo.
+2. Si pregunta sobre sus tanqueos, ahorro diario si no mueve el carro (38.4 km diarios = ~$7.93/día), gastos por tarjeta (Primax, Anthony, Efectivo), porcentaje de avance del presupuesto mensual, odómetro, rendimiento, alcancía o inventario de piezas, usa los datos exactos del JSON de arriba.
+3. Si pregunta sobre mecánica, ruidos, fallas, repuestos, llantas (215/60 R17), aceite (5W-30 sintético DEXOS1), plumas (24", 16", 10" J-Hook), normativas de tránsito en Ecuador (ATM, ATV Samborondón, SRI) o cualquier duda general, dale respuestas técnicas precisas adaptadas al motor 1.5 Turbo y al clima de Guayaquil.`;
 
           const conversationHistory = updatedChat.slice(-8).map((m) => ({
             role: m.role === 'assistant' ? 'model' : 'user',
@@ -610,42 +693,15 @@ Reglas de comportamiento de Matías:
             requestBody.tools = [{ google_search: {} }];
           }
 
-          let response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(requestBody)
-            }
-          );
-
-          let result = await response.json();
-
-          // Fallback automático sin herramienta de búsqueda si la clave no soporta grounding directo
-          if (result.error && useWebSearch) {
-            delete requestBody.tools;
-            response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-              }
-            );
-            result = await response.json();
-          }
-
-          if (result.error) {
-            throw new Error(result.error.message || 'Error en la consulta a Gemini');
-          }
+          const result = await callGeminiWithFallback(geminiKey, requestBody);
 
           const replyText =
             result?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('\n').trim() ||
             'No pude procesar la respuesta en este momento.';
 
-          setMatiasMessages([...updatedChat, { role: 'assistant', text: replyText }]);
+          setMathiasMessages([...updatedChat, { role: 'assistant', text: replyText }]);
         } catch (err) {
-          setMatiasMessages([
+          setMathiasMessages([
             ...updatedChat,
             {
               role: 'assistant',
@@ -653,7 +709,7 @@ Reglas de comportamiento de Matías:
             }
           ]);
         } finally {
-          setIsMatiasTyping(false);
+          setIsMathiasTyping(false);
         }
       };
 
@@ -834,17 +890,9 @@ Reglas de comportamiento de Matías:
             partsReq.push({ inline_data: { mime_type: 'image/jpeg', data: dashImg.split(',')[1] } });
           }
 
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ contents: [{ parts: partsReq }] })
-            }
-          );
-
-          const result = await response.json();
-          if (result.error) throw new Error(result.error.message || 'API Key inválida');
+          const result = await callGeminiWithFallback(geminiKey, {
+            contents: [{ parts: partsReq }]
+          });
 
           const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
           const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -1099,97 +1147,100 @@ function doPost(e) {
             </div>
           </div>
 
-          {/* TARJETA HERO FINTECH */}
+          {/* PLAQUETA DE INICIO (HERO CARD): TELEMETRÍA + PRESUPUESTO MENSUAL PROYECTADO Y % DE AVANCE */}
           <div className="hero-card rounded-3xl p-4 mb-4 relative overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#FDA481] bg-[#181A2F]/55 px-2.5 py-1 rounded-full border border-[#FDA481]/25">
-                ● Telemetría Google Sheets
+                ● Resumen Ejecutivo & Telemetría
               </span>
               <span className="text-[11px] text-white/80 font-mono">
-                {ultimoRegistro ? ultimoRegistro.fecha : '09/11/2026'}
+                {ultimoRegistro ? ultimoRegistro.fecha : '11/11/2026'}
               </span>
             </div>
 
-            {ultimoRegistro ? (
+            {/* Fila Principal: Odómetro y Último Tanqueo */}
+            <div className="flex items-baseline justify-between my-1">
               <div>
-                <div className="flex items-baseline justify-between my-1">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Odómetro Actual</p>
-                    <p className="text-2xl font-extrabold text-white font-mono tracking-tight">
-                      {toNum(ultimoRegistro.odometro).toLocaleString()} <span className="text-xs font-normal text-[#FDA481]">km</span>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Último Tanqueo</p>
-                    <p className="text-2xl font-extrabold text-[#FDA481] font-mono">
-                      ${toNum(ultimoRegistro.costoTotal).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
+                <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Odómetro Actual</p>
+                <p className="text-2xl font-extrabold text-white font-mono tracking-tight">
+                  {odometroActualVehiculo.toLocaleString()} <span className="text-xs font-normal text-[#FDA481]">km</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Último Tanqueo</p>
+                <p className="text-2xl font-extrabold text-[#FDA481] font-mono">
+                  ${ultimoRegistro ? toNum(ultimoRegistro.costoTotal).toFixed(2) : '56.77'}
+                </p>
+              </div>
+            </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center bg-[#181A2F]/65 backdrop-blur-md rounded-2xl p-2.5 mt-2.5 border border-white/10">
-                  <div>
-                    <p className="text-[10px] text-white/60">Galones</p>
-                    <p className="text-xs font-bold text-white font-mono">{toNum(ultimoRegistro.galones).toFixed(3)} gal</p>
-                  </div>
-                  <div className="border-x border-white/10">
-                    <p className="text-[10px] text-white/60">Precio / Gal</p>
-                    <p className="text-xs font-bold text-[#FDA481] font-mono">${toNum(ultimoRegistro.precioGalon).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/60">Método Pago</p>
-                    <p className="text-[11px] font-bold text-white truncate px-1">{ultimoRegistro.metodoPago}</p>
-                  </div>
+            {/* Bloque Destacado: Presupuesto Mensual Proyectado y Barra de % de Avance */}
+            <div className="bg-[#181A2F]/70 backdrop-blur-md rounded-2xl p-3 mt-2.5 border border-white/15 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#FDA481]">
+                    Presupuesto Mensual (Gasolina + Parqueo)
+                  </p>
+                  <p className="text-[11px] text-white/85 font-mono mt-0.5">
+                    Ejecutado: <span className="text-white font-bold">${gastoOperativoEjecutadoMes.toFixed(2)}</span> / ${presupuestoOperativoTotal.toFixed(2)}
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between text-[11px] text-white/90 mt-3 pt-2 border-t border-white/15">
-                  <span className="font-medium">
-                    {piezasUrgentesCount > 0 ? `${piezasUrgentesCount} cambio urgente (4 Llantas)` : 'Componentes al día'}
-                  </span>
-                  <span className="font-bold text-[#FDA481] font-mono">
-                    Mant. 102k: -{toNum(ultimoRegistro.kmMantenimiento).toLocaleString()} km
+                <div className="text-right">
+                  <span className="text-sm font-extrabold font-mono text-[#FDA481] bg-[#54162B] px-2.5 py-1 rounded-xl border border-[#FDA481]/40">
+                    {porcentajePresupuestoMes}%
                   </span>
                 </div>
               </div>
-            ) : (
-              <div className="py-1">
-                <div className="flex items-baseline justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-white/70">Odómetro Base</p>
-                    <p className="text-2xl font-extrabold text-white font-mono">94,499 <span className="text-xs text-[#FDA481]">km</span></p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-white/70">Próximo Servicio</p>
-                    <p className="text-sm font-bold text-[#FDA481] font-mono">En 7,501 km</p>
-                  </div>
-                </div>
+
+              {/* Barra de Progreso del Presupuesto Mensual */}
+              <div className="w-full h-2.5 bg-[#181A2F] rounded-full overflow-hidden border border-white/10 p-0.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#FDA481] to-[#B4182D] transition-all duration-500"
+                  style={{ width: `${porcentajePresupuestoMes}%` }}
+                />
               </div>
-            )}
+
+              <div className="flex items-center justify-between text-[10px] text-white/75 font-mono pt-0.5">
+                <span>Alcancía 102k: ${toNum(savingsFund.ahorrado).toFixed(0)}/${toNum(savingsFund.meta).toFixed(0)} ({porcentajeAhorro}%)</span>
+                <span>Ahorro sin rodar/día: $7.93</span>
+              </div>
+            </div>
+
+            {/* Pie de Plaqueta: Alertas de Piezas y Próximo Mantenimiento */}
+            <div className="flex items-center justify-between text-[11px] text-white/90 mt-2.5 pt-2 border-t border-white/15">
+              <span className="font-medium">
+                {piezasUrgentesCount > 0 ? `⚠️ ${piezasUrgentesCount} pieza urgente (4 Llantas)` : '✓ Piezas al día'}
+              </span>
+              <span className="font-bold text-[#FDA481] font-mono">
+                Mant. 102k: -{kmFaltantes102k.toLocaleString()} km
+              </span>
+            </div>
           </div>
 
-          {/* NAVEGACIÓN VECTORIAL DE 6 PESTAÑAS (INCLUYE A MATÍAS IA) */}
-          <div className="grid grid-cols-6 gap-1 bg-[#242E49]/95 p-1.5 rounded-2xl border border-[#37415C] mb-4 shadow-inner">
+          {/* NAVEGACIÓN DE SOLO ÍCONOS (SIN TEXTO TRUNCADO) */}
+          <div className="grid grid-cols-6 gap-1.5 bg-[#242E49]/95 p-1.5 rounded-2xl border border-[#37415C] mb-4 shadow-inner">
             {[
-              { id: 'nuevo', icon: <IconPlus />, label: 'Tanqueo' },
-              { id: 'piezas', icon: <IconWrench />, label: 'Piezas', badge: piezasUrgentesCount },
-              { id: 'guantera', icon: <IconShield />, label: 'Guantera' },
-              { id: 'reporte', icon: <IconChart />, label: 'Finanzas' },
-              { id: 'matias', icon: <IconSparkles />, label: 'Matías IA' },
-              { id: 'sheets', icon: <IconDatabase />, label: `Base` },
+              { id: 'nuevo', icon: <IconPlus />, title: 'Nuevo Tanqueo' },
+              { id: 'piezas', icon: <IconWrench />, title: 'Inventario de Piezas', badge: piezasUrgentesCount },
+              { id: 'guantera', icon: <IconShield />, title: 'Guantera Digital' },
+              { id: 'reporte', icon: <IconChart />, title: 'Finanzas y Presupuesto' },
+              { id: 'mathias', icon: <IconSparkles />, title: 'Mathias IA' },
+              { id: 'sheets', icon: <IconDatabase />, title: 'Base Google Sheets' },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 rounded-xl text-[9px] font-bold transition-all relative flex flex-col items-center justify-center gap-1 ${
+                title={tab.title}
+                aria-label={tab.title}
+                className={`h-11 rounded-xl transition-all relative flex items-center justify-center ${
                   activeTab === tab.id
-                    ? 'btn-sunset text-white shadow-md scale-[1.02]'
-                    : 'text-slate-300 hover:text-white'
+                    ? 'btn-sunset text-white shadow-md scale-[1.03]'
+                    : 'text-slate-300 hover:text-white bg-[#181A2F]/40'
                 }`}
               >
                 {tab.icon}
-                <span className="truncate max-w-full px-0.5">{tab.label}</span>
                 {tab.badge > 0 && (
-                  <span className="absolute -top-1 -right-0.5 w-4 h-4 bg-[#B4182D] border border-[#FDA481] text-white rounded-full text-[9px] flex items-center justify-center font-extrabold shadow">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#B4182D] border border-[#FDA481] text-white rounded-full text-[9px] flex items-center justify-center font-extrabold shadow">
                     {tab.badge}
                   </span>
                 )}
@@ -1205,7 +1256,7 @@ function doPost(e) {
                   <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#FDA481]">
                     01 • Escáner de Factura y Odómetro
                   </h2>
-                  <span className="text-[10px] text-slate-300 bg-[#37415C]/60 px-2.5 py-0.5 rounded-full font-semibold">IA Vision</span>
+                  <span className="text-[10px] text-slate-300 bg-[#37415C]/60 px-2.5 py-0.5 rounded-full font-semibold">Gemini 3 Vision</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
@@ -1822,8 +1873,8 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 5: AGENTE VIRTUAL MATÍAS IA */}
-          {activeTab === 'matias' && (
+          {/* PESTAÑA 5: AGENTE VIRTUAL MATHIAS IA */}
+          {activeTab === 'mathias' && (
             <div className="space-y-3">
               <div className="premium-card rounded-3xl p-4">
                 <div className="flex items-center justify-between">
@@ -1833,23 +1884,23 @@ function doPost(e) {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-sm font-extrabold text-white">Matías • Agente Vehicular IA</h2>
+                        <h2 className="text-sm font-extrabold text-white">Mathias • Copiloto IA</h2>
                         <span className="text-[9px] font-bold bg-[#54162B] text-[#FDA481] border border-[#FDA481]/40 px-2 py-0.5 rounded-full">
-                          Sheets + Web
+                          Gemini 3
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-300">
-                        Conectado a tus {records.length} registros, inventario y motor de búsqueda
+                        Conectado a tu Google Sheet, inventario y búsqueda web
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => {
-                      if (confirm('¿Deseas limpiar la conversación con Matías?')) {
-                        setMatiasMessages([
+                      if (confirm('¿Deseas limpiar la conversación con Mathias?')) {
+                        setMathiasMessages([
                           {
                             role: 'assistant',
-                            text: '¡Hola Anthony! Historial limpio. Estoy conectado a tu Google Sheet y listo para cualquier consulta sobre tus consumos o sobre la mecánica de tu Captiva LT 1.5 Turbo.'
+                            text: '¡Hola Anthony! Historial limpio. Soy Mathias y estoy conectado a tu Google Sheet y listo para cualquier consulta sobre tus consumos o sobre la mecánica de tu Captiva LT 1.5 Turbo.'
                           }
                         ]);
                       }
@@ -1862,10 +1913,10 @@ function doPost(e) {
 
                 {/* Interruptor de búsqueda en Internet + Sugerencias rápidas */}
                 <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#37415C]/60">
-                  <span className="text-[11px] text-slate-300 font-medium">Búsqueda en Internet activa:</span>
+                  <span className="text-[11px] text-slate-300 font-medium">Modo de consulta:</span>
                   <button
                     onClick={() => setUseWebSearch(!useWebSearch)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition ${
                       useWebSearch
                         ? 'bg-[#54162B] border-[#FDA481] text-[#FDA481]'
                         : 'bg-[#181A2F] border-[#37415C] text-slate-400'
@@ -1877,14 +1928,14 @@ function doPost(e) {
 
                 <div className="flex gap-1.5 overflow-x-auto pt-2.5 pb-1">
                   {[
-                    '¿Cuánto he gastado en gasolina y qué rendimiento llevo?',
+                    'Si no muevo el carro mañana, ¿cuánto me ahorro en combustible?',
+                    '¿Cuánto he gastado en gasolina y cómo va mi presupuesto del mes?',
                     '¿Qué marca de llantas 215/60 R17 me recomiendas en Guayaquil?',
-                    '¿Qué toca revisar a los 102,000 km en mi Captiva 1.5 Turbo?',
-                    '¿Cómo va mi alcancía y qué piezas están urgentes?'
+                    '¿Qué toca revisar a los 102,000 km en mi Captiva 1.5 Turbo?'
                   ].map((q, idx) => (
                     <button
                       key={idx}
-                      onClick={() => askMatias(q)}
+                      onClick={() => askMathias(q)}
                       className="shrink-0 bg-[#181A2F] hover:border-[#FDA481] border border-[#37415C] text-[#FDA481] px-3 py-1.5 rounded-xl text-[11px] font-semibold transition"
                     >
                       {q}
@@ -1893,9 +1944,9 @@ function doPost(e) {
                 </div>
               </div>
 
-              {/* Ventana de conversación con Matías */}
+              {/* Ventana de conversación con Mathias */}
               <div className="premium-card rounded-3xl p-4 space-y-3 max-h-[52vh] overflow-y-auto">
-                {matiasMessages.map((msg, i) => (
+                {mathiasMessages.map((msg, i) => (
                   <div
                     key={i}
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -1909,38 +1960,38 @@ function doPost(e) {
                     >
                       {msg.role === 'assistant' && (
                         <p className="text-[10px] font-extrabold text-[#FDA481] mb-1 uppercase tracking-wider">
-                          Matías IA
+                          MATHIAS IA
                         </p>
                       )}
                       {msg.text}
                     </div>
                   </div>
                 ))}
-                {isMatiasTyping && (
+                {isMathiasTyping && (
                   <div className="flex justify-start">
                     <div className="bg-[#181A2F] border border-[#37415C] rounded-2xl px-3.5 py-2.5 text-xs text-[#FDA481] font-semibold animate-pulse">
-                      Matías está analizando tus datos...
+                      Mathias está analizando tus datos...
                     </div>
                   </div>
                 )}
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Barra de entrada para hablar con Matías */}
+              {/* Barra de entrada para hablar con Mathias */}
               <div className="premium-card rounded-2xl p-2 flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Pregúntale a Matías sobre tu Google Sheet o mecánica..."
-                  value={matiasInput}
-                  onChange={(e) => setMatiasInput(e.target.value)}
+                  placeholder="Pregúntale a Mathias sobre tu Google Sheet o mecánica..."
+                  value={mathiasInput}
+                  onChange={(e) => setMathiasInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') askMatias();
+                    if (e.key === 'Enter') askMathias();
                   }}
                   className="flex-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2.5 text-xs text-white"
                 />
                 <button
-                  onClick={() => askMatias()}
-                  disabled={isMatiasTyping}
+                  onClick={() => askMathias()}
+                  disabled={isMathiasTyping}
                   className="btn-sunset text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shrink-0"
                 >
                   Enviar
@@ -1983,14 +2034,14 @@ function doPost(e) {
             </div>
           )}
 
-          {/* BOTÓN FLOTANTE DE ACCESO RÁPIDO A MATÍAS (CUANDO ESTÁS EN OTRAS PESTAÑAS) */}
-          {activeTab !== 'matias' && (
+          {/* BOTÓN FLOTANTE DE ACCESO RÁPIDO A MATHIAS */}
+          {activeTab !== 'mathias' && (
             <button
-              onClick={() => setActiveTab('matias')}
+              onClick={() => setActiveTab('mathias')}
               className="fixed bottom-5 right-4 z-40 btn-sunset text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 border border-[#FDA481]/50"
             >
               <IconSparkles />
-              <span className="text-xs font-extrabold tracking-wide">Preguntar a Matías</span>
+              <span className="text-xs font-extrabold tracking-wide">Mathias IA</span>
             </button>
           )}
 
@@ -2110,7 +2161,7 @@ function doPost(e) {
           {showSyncModal && (
             <div className="fixed inset-0 bg-[#181A2F]/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
               <div className="premium-card rounded-3xl p-5 max-w-md w-full space-y-3.5 max-h-[90vh] overflow-y-auto">
-                <h3 className="font-extrabold text-sm text-[#FDA481]">Conexión Google Sheets & Matías IA</h3>
+                <h3 className="font-extrabold text-sm text-[#FDA481]">Conexión Google Sheets & Mathias IA</h3>
 
                 <div>
                   <label className="text-[11px] text-slate-300 block mb-1">
@@ -2130,7 +2181,7 @@ function doPost(e) {
 
                 <div>
                   <label className="text-[11px] text-slate-300 block mb-1">
-                    2. Gemini API Key (Activa el escáner de fotos y a Matías IA):
+                    2. Gemini API Key (Activa el escáner de fotos y a Mathias IA):
                   </label>
                   <input
                     type="password"
