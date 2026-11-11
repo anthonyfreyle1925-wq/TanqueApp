@@ -15,7 +15,6 @@
   <link id="fav-icon-link" rel="icon" type="image/png" href="" />
 
   <script>
-    // Generador instantáneo de Ícono Premium 512x512 para iPhone (Sin imágenes externas caricaturescas)
     (function generatePremiumAppIcon() {
       try {
         var canvas = document.createElement('canvas');
@@ -23,7 +22,6 @@
         canvas.height = 512;
         var ctx = canvas.getContext('2d');
 
-        // 1. Fondo multicapa con la paleta (#181A2F -> #242E49 -> #54162B)
         var bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
         bgGrad.addColorStop(0, '#181A2F');
         bgGrad.addColorStop(0.55, '#242E49');
@@ -31,7 +29,6 @@
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, 512, 512);
 
-        // 2. Resplandor radial superior derecho en Carmesí/Durazno
         var glow = ctx.createRadialGradient(400, 100, 10, 400, 100, 320);
         glow.addColorStop(0, 'rgba(253, 164, 129, 0.28)');
         glow.addColorStop(0.5, 'rgba(180, 24, 45, 0.15)');
@@ -39,14 +36,12 @@
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, 512, 512);
 
-        // 3. Anillo exterior biselado sutil
         ctx.beginPath();
         ctx.arc(256, 250, 182, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(55, 65, 92, 0.65)';
         ctx.lineWidth = 4;
         ctx.stroke();
 
-        // 4. Arco de Tacómetro Deportivo (Degradado #FDA481 -> #B4182D)
         var arcGrad = ctx.createLinearGradient(90, 360, 420, 120);
         arcGrad.addColorStop(0, '#FDA481');
         arcGrad.addColorStop(0.6, '#E05A54');
@@ -59,7 +54,6 @@
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // 5. Aguja minimalista del tacómetro apuntando a zona Turbo
         ctx.save();
         ctx.translate(256, 255);
         ctx.rotate(-Math.PI * 0.18);
@@ -75,19 +69,16 @@
         ctx.stroke();
         ctx.restore();
 
-        // 6. Tipografía Central Ejecutiva "LT"
         ctx.fillStyle = '#FFFFFF';
         ctx.font = '800 108px -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('LT', 256, 252);
 
-        // 7. Subtítulo "1.5 TURBO" en Durazno Dorado (#FDA481)
         ctx.fillStyle = '#FDA481';
         ctx.font = '700 28px monospace';
         ctx.fillText('1.5 TURBO', 256, 342);
 
-        // 8. Píldora inferior decorativa
         ctx.fillStyle = 'rgba(253, 164, 129, 0.85)';
         ctx.fillRect(216, 382, 80, 5);
 
@@ -98,7 +89,7 @@
     })();
   </script>
 
-  <title>Captiva LT 1.5 Turbo — Suite Vehicular</title>
+  <title>Captiva LT 1.5 Turbo — Suite Vehicular & Matías IA</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -146,7 +137,7 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
 
-    input, select, button {
+    input, select, button, textarea {
       font-size: 16px !important;
     }
 
@@ -200,7 +191,7 @@
     const FIXED_PARKING = 48.88;
     const TIRE_ROTATION_INTERVAL = 5000;
 
-    // Iconografía Vectorial Minimalista (Sustituye emojis caricaturescos)
+    // Iconografía Vectorial Minimalista
     const IconGauge = () => (
       <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 14l4-4" />
@@ -241,6 +232,12 @@
         <ellipse cx="12" cy="5" rx="9" ry="3" />
         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+      </svg>
+    );
+
+    const IconSparkles = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
       </svg>
     );
 
@@ -372,6 +369,21 @@
       });
       const [customSavingInput, setCustomSavingInput] = useState('');
 
+      // Estado del Agente Virtual Matías
+      const [matiasMessages, setMatiasMessages] = useState(() => {
+        const saved = localStorage.getItem('captiva_matias_chat_v1');
+        return saved ? JSON.parse(saved) : [
+          {
+            role: 'assistant',
+            text: '¡Hola Anthony! Soy Matías, tu copiloto e ingeniero mecánico personal para la Chevrolet Captiva LT 1.5 Turbo (GTF2348). Estoy conectado en vivo a tu Google Sheets, a tu inventario de piezas y a internet. ¿Qué deseas consultar hoy?'
+          }
+        ];
+      });
+      const [matiasInput, setMatiasInput] = useState('');
+      const [isMatiasTyping, setIsMatiasTyping] = useState(false);
+      const [useWebSearch, setUseWebSearch] = useState(true);
+      const chatEndRef = useRef(null);
+
       const [filterPartStatus, setFilterPartStatus] = useState('Todas');
       const [showAddPartModal, setShowAddPartModal] = useState(false);
       const [editingPart, setEditingPart] = useState(null);
@@ -437,6 +449,13 @@
         localStorage.setItem('captiva_savings_v1', JSON.stringify(savingsFund));
       }, [savingsFund]);
 
+      useEffect(() => {
+        localStorage.setItem('captiva_matias_chat_v1', JSON.stringify(matiasMessages));
+        if (activeTab === 'matias') {
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+      }, [matiasMessages, activeTab]);
+
       const fetchFromGoogleSheets = async () => {
         if (!scriptUrl) return;
         setIsSyncing(true);
@@ -493,6 +512,150 @@
 
       const ultimoRegistro = records.length > 0 ? records[0] : null;
       const odometroActualVehiculo = ultimoRegistro ? toNum(ultimoRegistro.odometro) : 94499;
+
+      const totalPrimax = records
+        .filter((r) => r.metodoPago === 'Tarjeta Primax')
+        .reduce((acc, r) => acc + toNum(r.costoTotal), 0);
+      const totalAnthony = records
+        .filter((r) => r.metodoPago === 'Tarjeta de Anthony')
+        .reduce((acc, r) => acc + toNum(r.costoTotal), 0);
+      const totalEfectivo = records
+        .filter((r) => r.metodoPago === 'Efectivo')
+        .reduce((acc, r) => acc + toNum(r.costoTotal), 0);
+
+      const registrosConCostoKm = records.filter((r) => toNum(r.costoKm) > 0);
+      const costoKmPromedio =
+        registrosConCostoKm.length > 0
+          ? registrosConCostoKm.reduce((acc, r) => acc + toNum(r.costoKm), 0) / registrosConCostoKm.length
+          : 0.2065;
+      const gastoGasolinaMensualProyectado = costoKmPromedio * MONTHLY_AVG_KM;
+      const presupuestoOperativoTotal = gastoGasolinaMensualProyectado + FIXED_PARKING;
+
+      const piezasUrgentesCount = parts.filter((p) => p.estado === 'Urgente').length;
+      const filteredParts = filterPartStatus === 'Todas' ? parts : parts.filter((p) => p.estado === filterPartStatus);
+
+      const kmFaltantes102k = Math.max(0, MAINTENANCE_GOAL - odometroActualVehiculo);
+      const mesesEstimadosMant = (kmFaltantes102k / MONTHLY_AVG_KM).toFixed(1);
+      const porcentajeAhorro = Math.min(100, Math.round((toNum(savingsFund.ahorrado) / toNum(savingsFund.meta)) * 100));
+
+      // Función del Agente Virtual Matías
+      const askMatias = async (customPrompt) => {
+        const question = (customPrompt !== undefined ? customPrompt : matiasInput).trim();
+        if (!question) return;
+
+        const updatedChat = [...matiasMessages, { role: 'user', text: question }];
+        setMatiasMessages(updatedChat);
+        if (customPrompt === undefined) setMatiasInput('');
+        setIsMatiasTyping(true);
+
+        if (!geminiKey) {
+          setIsMatiasTyping(false);
+          setMatiasMessages([
+            ...updatedChat,
+            {
+              role: 'assistant',
+              text: 'Para poder responderte y analizar tu Google Sheet o buscar en internet, por favor ingresa tu Gemini API Key tocando el botón de Ajustes (⚙️ arriba a la derecha).'
+            }
+          ]);
+          return;
+        }
+
+        try {
+          const contextoVehicular = {
+            propietario: 'Anthony Freile',
+            vehiculo: 'Chevrolet Captiva LT Turbo 1.5 (Año 2020, 5 pasajeros, Color Blanco, Origen China)',
+            ciudad: 'Guayaquil y Samborondón, Ecuador',
+            placa: 'GTF2348 (Termina en 8 - Revisión Técnica Vehicular obligatoria en Septiembre)',
+            chasis_vin: 'LZWADAGAXLB008514',
+            motor: 'LJO18K81420455 (1451 CC Turbo)',
+            matricula: 'Emitida en ATV Samborondón el 07-OCT-2026, caduca el 06-OCT-2031',
+            ultimoMantenimientoTaller: '01/09/2026 a los 92,541 km en INDUCORP',
+            proximoMantenimientoMeta: '102,000 km',
+            odometroActual: odometroActualVehiculo,
+            kmRestantesPara102k: kmFaltantes102k,
+            resumenFinanciero: {
+              gastoTarjetaPrimax: totalPrimax,
+              gastoTarjetaAnthony: totalAnthony,
+              gastoEfectivo: totalEfectivo,
+              parqueoFijoMensual: FIXED_PARKING,
+              gasolinaMensualProyectada: Number(gastoGasolinaMensualProyectado.toFixed(2)),
+              presupuestoOperativoMensualTotal: Number(presupuestoOperativoTotal.toFixed(2)),
+              alcanciaMantenimiento102k: savingsFund
+            },
+            registrosGoogleSheets: records.slice(0, 15),
+            inventarioPiezas: parts,
+            botiquinYKitVial: kitItems
+          };
+
+          const systemPrompt = `Eres Matías, el Agente Virtual Personal, Analista Financiero y Mecánico Experto de cabecera de Anthony para su Chevrolet Captiva LT Turbo 1.5 (año 2020) en Guayaquil, Ecuador.
+Tienes acceso directo y en tiempo real a los datos de su aplicación vinculados con su Google Sheets:
+${JSON.stringify(contextoVehicular)}
+
+Reglas de comportamiento de Matías:
+1. Responde siempre en español con tono cercano, ejecutivo, claro y directo. Llámalo por su nombre (Anthony) cuando sea natural.
+2. Si pregunta sobre sus tanqueos, gastos por tarjeta (Primax, Anthony, Efectivo), odómetro, rendimiento, alcancía o inventario de piezas, usa los datos exactos del JSON de arriba.
+3. Si pregunta sobre mecánica, ruidos, fallas, repuestos, llantas (215/60 R17), aceite (5W-30 sintético DEXOS1), plumas (24", 16", 10" J-Hook), normativas de tránsito en Ecuador (ATM, ATV Samborondón, SRI) o cualquier duda general, dale respuestas técnicas precisas adaptadas al motor 1.5 Turbo y al clima cálido de Guayaquil.`;
+
+          const conversationHistory = updatedChat.slice(-8).map((m) => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.text }]
+          }));
+
+          const requestBody = {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: conversationHistory
+          };
+
+          if (useWebSearch) {
+            requestBody.tools = [{ google_search: {} }];
+          }
+
+          let response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody)
+            }
+          );
+
+          let result = await response.json();
+
+          // Fallback automático sin herramienta de búsqueda si la clave no soporta grounding directo
+          if (result.error && useWebSearch) {
+            delete requestBody.tools;
+            response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+              }
+            );
+            result = await response.json();
+          }
+
+          if (result.error) {
+            throw new Error(result.error.message || 'Error en la consulta a Gemini');
+          }
+
+          const replyText =
+            result?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('\n').trim() ||
+            'No pude procesar la respuesta en este momento.';
+
+          setMatiasMessages([...updatedChat, { role: 'assistant', text: replyText }]);
+        } catch (err) {
+          setMatiasMessages([
+            ...updatedChat,
+            {
+              role: 'assistant',
+              text: 'Ocurrió un inconveniente al conectar (' + err.message + '). Verifica tu conexión o tu Gemini API Key en Ajustes.'
+            }
+          ]);
+        } finally {
+          setIsMatiasTyping(false);
+        }
+      };
 
       const syncExtraToSheet = async (payload) => {
         if (!scriptUrl) return;
@@ -805,31 +968,6 @@
         alert('Tanqueo registrado exitosamente en Google Sheets.');
       };
 
-      const totalPrimax = records
-        .filter((r) => r.metodoPago === 'Tarjeta Primax')
-        .reduce((acc, r) => acc + toNum(r.costoTotal), 0);
-      const totalAnthony = records
-        .filter((r) => r.metodoPago === 'Tarjeta de Anthony')
-        .reduce((acc, r) => acc + toNum(r.costoTotal), 0);
-      const totalEfectivo = records
-        .filter((r) => r.metodoPago === 'Efectivo')
-        .reduce((acc, r) => acc + toNum(r.costoTotal), 0);
-
-      const registrosConCostoKm = records.filter((r) => toNum(r.costoKm) > 0);
-      const costoKmPromedio =
-        registrosConCostoKm.length > 0
-          ? registrosConCostoKm.reduce((acc, r) => acc + toNum(r.costoKm), 0) / registrosConCostoKm.length
-          : 0.2065;
-      const gastoGasolinaMensualProyectado = costoKmPromedio * MONTHLY_AVG_KM;
-      const presupuestoOperativoTotal = gastoGasolinaMensualProyectado + FIXED_PARKING;
-
-      const piezasUrgentesCount = parts.filter((p) => p.estado === 'Urgente').length;
-      const filteredParts = filterPartStatus === 'Todas' ? parts : parts.filter((p) => p.estado === filterPartStatus);
-
-      const kmFaltantes102k = Math.max(0, MAINTENANCE_GOAL - odometroActualVehiculo);
-      const mesesEstimadosMant = (kmFaltantes102k / MONTHLY_AVG_KM).toFixed(1);
-      const porcentajeAhorro = Math.min(100, Math.round((toNum(savingsFund.ahorrado) / toNum(savingsFund.meta)) * 100));
-
       const codigoAppsScript = `function toNum(val) {
   if (typeof val === 'number') return val;
   if (!val) return 0;
@@ -910,8 +1048,8 @@ function doPost(e) {
 }`;
 
       return (
-        <div className="max-w-md mx-auto min-h-screen pb-28 px-3.5 pt-3.5">
-          {/* CABECERA EJECUTIVA CON EMBLEMA VECTORIAL */}
+        <div className="max-w-md mx-auto min-h-screen pb-28 px-3.5 pt-3.5 relative">
+          {/* CABECERA EJECUTIVA */}
           <div className="premium-card rounded-3xl p-4 mb-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1029,26 +1167,27 @@ function doPost(e) {
             )}
           </div>
 
-          {/* NAVEGACIÓN VECTORIAL DE 5 PESTAÑAS */}
-          <div className="grid grid-cols-5 gap-1 bg-[#242E49]/95 p-1.5 rounded-2xl border border-[#37415C] mb-4 shadow-inner">
+          {/* NAVEGACIÓN VECTORIAL DE 6 PESTAÑAS (INCLUYE A MATÍAS IA) */}
+          <div className="grid grid-cols-6 gap-1 bg-[#242E49]/95 p-1.5 rounded-2xl border border-[#37415C] mb-4 shadow-inner">
             {[
               { id: 'nuevo', icon: <IconPlus />, label: 'Tanqueo' },
               { id: 'piezas', icon: <IconWrench />, label: 'Piezas', badge: piezasUrgentesCount },
               { id: 'guantera', icon: <IconShield />, label: 'Guantera' },
               { id: 'reporte', icon: <IconChart />, label: 'Finanzas' },
-              { id: 'sheets', icon: <IconDatabase />, label: `Base (${records.length})` },
+              { id: 'matias', icon: <IconSparkles />, label: 'Matías IA' },
+              { id: 'sheets', icon: <IconDatabase />, label: `Base` },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2.5 rounded-xl text-[10px] font-bold transition-all relative flex flex-col items-center justify-center gap-1 ${
+                className={`py-2 rounded-xl text-[9px] font-bold transition-all relative flex flex-col items-center justify-center gap-1 ${
                   activeTab === tab.id
                     ? 'btn-sunset text-white shadow-md scale-[1.02]'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {tab.icon}
-                <span>{tab.label}</span>
+                <span className="truncate max-w-full px-0.5">{tab.label}</span>
                 {tab.badge > 0 && (
                   <span className="absolute -top-1 -right-0.5 w-4 h-4 bg-[#B4182D] border border-[#FDA481] text-white rounded-full text-[9px] flex items-center justify-center font-extrabold shadow">
                     {tab.badge}
@@ -1683,7 +1822,134 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 5: BASE GOOGLE SHEETS */}
+          {/* PESTAÑA 5: AGENTE VIRTUAL MATÍAS IA */}
+          {activeTab === 'matias' && (
+            <div className="space-y-3">
+              <div className="premium-card rounded-3xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl btn-sunset flex items-center justify-center font-extrabold text-sm text-white shadow-md">
+                      M
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm font-extrabold text-white">Matías • Agente Vehicular IA</h2>
+                        <span className="text-[9px] font-bold bg-[#54162B] text-[#FDA481] border border-[#FDA481]/40 px-2 py-0.5 rounded-full">
+                          Sheets + Web
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300">
+                        Conectado a tus {records.length} registros, inventario y motor de búsqueda
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Deseas limpiar la conversación con Matías?')) {
+                        setMatiasMessages([
+                          {
+                            role: 'assistant',
+                            text: '¡Hola Anthony! Historial limpio. Estoy conectado a tu Google Sheet y listo para cualquier consulta sobre tus consumos o sobre la mecánica de tu Captiva LT 1.5 Turbo.'
+                          }
+                        ]);
+                      }
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-[#FDA481] font-semibold"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+
+                {/* Interruptor de búsqueda en Internet + Sugerencias rápidas */}
+                <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#37415C]/60">
+                  <span className="text-[11px] text-slate-300 font-medium">Búsqueda en Internet activa:</span>
+                  <button
+                    onClick={() => setUseWebSearch(!useWebSearch)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${
+                      useWebSearch
+                        ? 'bg-[#54162B] border-[#FDA481] text-[#FDA481]'
+                        : 'bg-[#181A2F] border-[#37415C] text-slate-400'
+                    }`}
+                  >
+                    {useWebSearch ? '🌐 Internet + Sheets ON' : '📊 Solo Datos de la App'}
+                  </button>
+                </div>
+
+                <div className="flex gap-1.5 overflow-x-auto pt-2.5 pb-1">
+                  {[
+                    '¿Cuánto he gastado en gasolina y qué rendimiento llevo?',
+                    '¿Qué marca de llantas 215/60 R17 me recomiendas en Guayaquil?',
+                    '¿Qué toca revisar a los 102,000 km en mi Captiva 1.5 Turbo?',
+                    '¿Cómo va mi alcancía y qué piezas están urgentes?'
+                  ].map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => askMatias(q)}
+                      className="shrink-0 bg-[#181A2F] hover:border-[#FDA481] border border-[#37415C] text-[#FDA481] px-3 py-1.5 rounded-xl text-[11px] font-semibold transition"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ventana de conversación con Matías */}
+              <div className="premium-card rounded-3xl p-4 space-y-3 max-h-[52vh] overflow-y-auto">
+                {matiasMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'btn-sunset text-white font-medium rounded-br-sm'
+                          : 'bg-[#181A2F] border border-[#37415C] text-slate-100 rounded-bl-sm'
+                      }`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <p className="text-[10px] font-extrabold text-[#FDA481] mb-1 uppercase tracking-wider">
+                          Matías IA
+                        </p>
+                      )}
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isMatiasTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-[#181A2F] border border-[#37415C] rounded-2xl px-3.5 py-2.5 text-xs text-[#FDA481] font-semibold animate-pulse">
+                      Matías está analizando tus datos...
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Barra de entrada para hablar con Matías */}
+              <div className="premium-card rounded-2xl p-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Pregúntale a Matías sobre tu Google Sheet o mecánica..."
+                  value={matiasInput}
+                  onChange={(e) => setMatiasInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') askMatias();
+                  }}
+                  className="flex-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2.5 text-xs text-white"
+                />
+                <button
+                  onClick={() => askMatias()}
+                  disabled={isMatiasTyping}
+                  className="btn-sunset text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shrink-0"
+                >
+                  Enviar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PESTAÑA 6: BASE GOOGLE SHEETS */}
           {activeTab === 'sheets' && (
             <div className="premium-card rounded-3xl p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -1715,6 +1981,17 @@ function doPost(e) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* BOTÓN FLOTANTE DE ACCESO RÁPIDO A MATÍAS (CUANDO ESTÁS EN OTRAS PESTAÑAS) */}
+          {activeTab !== 'matias' && (
+            <button
+              onClick={() => setActiveTab('matias')}
+              className="fixed bottom-5 right-4 z-40 btn-sunset text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 border border-[#FDA481]/50"
+            >
+              <IconSparkles />
+              <span className="text-xs font-extrabold tracking-wide">Preguntar a Matías</span>
+            </button>
           )}
 
           {/* MODAL PARA AGREGAR O EDITAR PIEZA */}
@@ -1833,7 +2110,7 @@ function doPost(e) {
           {showSyncModal && (
             <div className="fixed inset-0 bg-[#181A2F]/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
               <div className="premium-card rounded-3xl p-5 max-w-md w-full space-y-3.5 max-h-[90vh] overflow-y-auto">
-                <h3 className="font-extrabold text-sm text-[#FDA481]">Conexión Google Sheets & Gemini IA</h3>
+                <h3 className="font-extrabold text-sm text-[#FDA481]">Conexión Google Sheets & Matías IA</h3>
 
                 <div>
                   <label className="text-[11px] text-slate-300 block mb-1">
@@ -1853,7 +2130,7 @@ function doPost(e) {
 
                 <div>
                   <label className="text-[11px] text-slate-300 block mb-1">
-                    2. Gemini API Key (aistudio.google.com/app/apikey):
+                    2. Gemini API Key (Activa el escáner de fotos y a Matías IA):
                   </label>
                   <input
                     type="password"
