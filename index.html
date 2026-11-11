@@ -188,10 +188,11 @@
 
     const MAINTENANCE_GOAL = 102000;
     const MONTHLY_AVG_KM = 1145;
+    const DAILY_COMMUTE_KM = 38.4;
     const FIXED_PARKING = 48.88;
     const TIRE_ROTATION_INTERVAL = 5000;
 
-    // Lista de modelos Gemini con respaldo automático (Incluye gemini-3-flash-preview para nuevos usuarios)
+    // Lista de modelos Gemini con respaldo automático (Incluye gemini-3-flash-preview)
     const GEMINI_MODELS = [
       'gemini-3-flash-preview',
       'gemini-3.1-flash-lite-preview',
@@ -216,7 +217,6 @@
             return data;
           }
           lastError = data.error;
-          // Si falla por Google Search tool en un modelo específico, probamos sin tools en el mismo modelo antes de saltar
           if (payload.tools) {
             const fallbackPayload = { ...payload };
             delete fallbackPayload.tools;
@@ -240,7 +240,7 @@
       throw new Error(lastError?.message || 'No se pudo conectar con la API de Gemini.');
     }
 
-    // Iconografía Vectorial Minimalista (22x22 px para barra de solo íconos)
+    // Iconografía Vectorial Minimalista (Para barra de navegación de solo íconos)
     const IconGauge = () => (
       <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 14l4-4" />
@@ -287,6 +287,21 @@
         <ellipse cx="12" cy="5" rx="9" ry="3" />
         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+      </svg>
+    );
+
+    const IconCamera = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+      </svg>
+    );
+
+    const IconImage = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
       </svg>
     );
 
@@ -395,6 +410,21 @@
       return isNaN(n) ? 0 : n;
     };
 
+    const parseDateEC = (dateStr) => {
+      if (!dateStr) return null;
+      const parts = String(dateStr).trim().split('/');
+      if (parts.length === 3) {
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        let y = parseInt(parts[2], 10);
+        if (y < 100) y += 2000;
+        if (y === 2024) y = 2026; // Normaliza errores de tipeo 2024 -> 2026
+        return new Date(y, m, d);
+      }
+      const parsed = new Date(dateStr);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
     function App() {
       const [activeTab, setActiveTab] = useState('nuevo');
       const [records, setRecords] = useState(() => {
@@ -418,20 +448,23 @@
       });
       const [customSavingInput, setCustomSavingInput] = useState('');
 
-      // Estado del Agente Virtual Mathias
+      // Estado del Agente Virtual Mathias (con soporte para consulta visual por fotos)
       const [mathiasMessages, setMathiasMessages] = useState(() => {
-        const saved = localStorage.getItem('captiva_mathias_chat_v2');
+        const saved = localStorage.getItem('captiva_mathias_chat_v3');
         return saved ? JSON.parse(saved) : [
           {
             role: 'assistant',
-            text: '¡Hola Anthony! Soy Mathias, tu copiloto e ingeniero mecánico personal para la Chevrolet Captiva LT 1.5 Turbo (GTF2348). Estoy conectado en vivo a tu Google Sheets, a tu inventario de piezas y a internet con el nuevo motor Gemini 3. ¿Qué deseas consultar hoy?'
+            text: '¡Hola Anthony! Soy Mathias, tu copiloto e ingeniero mecánico personal para la Chevrolet Captiva LT 1.5 Turbo (GTF2348). Estoy conectado a tu Google Sheets, a tu inventario de piezas y a internet con Gemini 3. Además, ahora puedes enviarme fotos de repuestos, llantas o del tablero aquí mismo en el chat. ¿Qué revisamos hoy?'
           }
         ];
       });
       const [mathiasInput, setMathiasInput] = useState('');
+      const [mathiasImg, setMathiasImg] = useState(null);
       const [isMathiasTyping, setIsMathiasTyping] = useState(false);
       const [useWebSearch, setUseWebSearch] = useState(true);
       const chatEndRef = useRef(null);
+      const mathiasGalleryRef = useRef(null);
+      const mathiasCamRef = useRef(null);
 
       const [filterPartStatus, setFilterPartStatus] = useState('Todas');
       const [showAddPartModal, setShowAddPartModal] = useState(false);
@@ -499,7 +532,7 @@
       }, [savingsFund]);
 
       useEffect(() => {
-        localStorage.setItem('captiva_mathias_chat_v2', JSON.stringify(mathiasMessages));
+        localStorage.setItem('captiva_mathias_chat_v3', JSON.stringify(mathiasMessages));
         if (activeTab === 'mathias') {
           setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         }
@@ -560,6 +593,7 @@
       }, [scriptUrl, activeTab]);
 
       const ultimoRegistro = records.length > 0 ? records[0] : null;
+      const penultimoRegistro = records.length > 1 ? records[1] : null;
       const odometroActualVehiculo = ultimoRegistro ? toNum(ultimoRegistro.odometro) : 94499;
 
       const totalPrimax = records
@@ -580,8 +614,9 @@
       const gastoGasolinaMensualProyectado = costoKmPromedio * MONTHLY_AVG_KM;
       const presupuestoOperativoTotal = gastoGasolinaMensualProyectado + FIXED_PARKING;
 
-      // Cálculo de gasto del mes en curso para la barra de avance en la plaqueta de inicio
+      // 1. Cálculo de Presupuesto Mensual y % de Avance
       const now = new Date();
+      const currentDayOfMonth = now.getDate();
       const currentMonthNum = now.getMonth() + 1;
       const gastoGasolinaMesActual = records.reduce((acc, r) => {
         const partesFecha = String(r.fecha || '').split('/');
@@ -592,7 +627,6 @@
         return acc;
       }, 0);
 
-      // Si no hay registros con fecha de este mes pero existe un último registro, usamos el último tanqueo como referencia activa
       const gasolinaEjecutadaMes =
         gastoGasolinaMesActual > 0
           ? gastoGasolinaMesActual
@@ -606,6 +640,48 @@
         Math.round((gastoOperativoEjecutadoMes / presupuestoOperativoTotal) * 100)
       );
 
+      // 2. MEJORA 1: Alerta del "Día 12" (Actualización del precio de la Gasolina Súper en Ecuador)
+      const mostrarAlertaDia12 = currentDayOfMonth >= 8 && currentDayOfMonth <= 12;
+      const diasParaDia12 = 12 - currentDayOfMonth;
+      const textoAlertaDia12 =
+        diasParaDia12 === 0
+          ? '🔔 Hoy día 12 rige el nuevo precio de la Gasolina Súper en Ecuador'
+          : diasParaDia12 === 1
+          ? '🔔 Mañana día 12 cambia el precio de la Gasolina Súper (Evalúa tanquear hoy)'
+          : `🔔 En ${diasParaDia12} días (día 12) actualiza el precio de la Gasolina Súper`;
+
+      // 3. MEJORA 2: Semáforo de Eficiencia (km/gal vs. tanqueada anterior / promedio)
+      const registrosConRend = records.filter((r) => toNum(r.rendimiento) > 0);
+      const rendimientoActualRef =
+        ultimoRegistro && toNum(ultimoRegistro.rendimiento) > 0
+          ? toNum(ultimoRegistro.rendimiento)
+          : registrosConRend.length > 0
+          ? toNum(registrosConRend[0].rendimiento)
+          : 27.25;
+      const rendimientoPrevioRef =
+        penultimoRegistro && toNum(penultimoRegistro.rendimiento) > 0
+          ? toNum(penultimoRegistro.rendimiento)
+          : 25.80;
+      const variacionRendPct = Number(
+        (((rendimientoActualRef - rendimientoPrevioRef) / rendimientoPrevioRef) * 100).toFixed(1)
+      );
+      const esMasEficiente = variacionRendPct >= 0;
+
+      // 4. MEJORA 3: Estimador de Autonomía Restante y Próximo Día de Tanqueo
+      const galonesUltimoTanqueo = ultimoRegistro && toNum(ultimoRegistro.galones) > 0 ? toNum(ultimoRegistro.galones) : 10.343;
+      const autonomiaTotalTanqueKm = Math.round(galonesUltimoTanqueo * rendimientoActualRef);
+      const fechaUltTanqueoObj = ultimoRegistro ? parseDateEC(ultimoRegistro.fecha) : new Date(now.getFullYear(), now.getMonth(), 9);
+      const diasTranscurridosDesdeTanqueo = fechaUltTanqueoObj
+        ? Math.max(0, Math.min(10, Math.floor((now - fechaUltTanqueoObj) / (1000 * 60 * 60 * 24))))
+        : 2;
+      const kmConsumidosEstimados = Math.round(diasTranscurridosDesdeTanqueo * DAILY_COMMUTE_KM);
+      const autonomiaRestanteKm = Math.max(15, autonomiaTotalTanqueKm - kmConsumidosEstimados);
+      const diasRestantesAutonomia = Number((autonomiaRestanteKm / DAILY_COMMUTE_KM).toFixed(1));
+
+      const fechaProxTanqueoObj = new Date(now.getTime() + Math.round(diasRestantesAutonomia) * 24 * 60 * 60 * 1000);
+      const diasSemanaNombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const nombreDiaProxTanqueo = diasSemanaNombres[fechaProxTanqueoObj.getDay()];
+
       const piezasUrgentesCount = parts.filter((p) => p.estado === 'Urgente').length;
       const filteredParts = filterPartStatus === 'Todas' ? parts : parts.filter((p) => p.estado === filterPartStatus);
 
@@ -613,14 +689,66 @@
       const mesesEstimadosMant = (kmFaltantes102k / MONTHLY_AVG_KM).toFixed(1);
       const porcentajeAhorro = Math.min(100, Math.round((toNum(savingsFund.ahorrado) / toNum(savingsFund.meta)) * 100));
 
-      // Función del Agente Virtual Mathias (Actualizado a Gemini 3 con fallback automático)
+      const compressImage = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_SIZE = 1200;
+              let width = img.width;
+              let height = img.height;
+              if (width > height && width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              } else if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', 0.78));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
+
+      const handleImageSelect = async (e, type) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const compressed = await compressImage(file);
+          if (type === 'invoice') setInvoiceImg(compressed);
+          else if (type === 'dash') setDashImg(compressed);
+          else if (type === 'mathias') setMathiasImg(compressed);
+          setScanError('');
+        } catch (err) {
+          setScanError('No se pudo procesar la foto.');
+        }
+      };
+
+      // MEJORA 4: Función del Agente Virtual Mathias con Consulta Visual por Fotos + Gemini 3
       const askMathias = async (customPrompt) => {
         const question = (customPrompt !== undefined ? customPrompt : mathiasInput).trim();
-        if (!question) return;
+        if (!question && !mathiasImg) return;
 
-        const updatedChat = [...mathiasMessages, { role: 'user', text: question }];
+        const displayQuestion = question || 'Analiza esta imagen adjunta para mi Captiva LT 1.5 Turbo.';
+        const imageAttached = mathiasImg;
+
+        const updatedChat = [
+          ...mathiasMessages,
+          { role: 'user', text: displayQuestion, image: imageAttached || null }
+        ];
         setMathiasMessages(updatedChat);
         if (customPrompt === undefined) setMathiasInput('');
+        setMathiasImg(null);
         setIsMathiasTyping(true);
 
         if (!geminiKey) {
@@ -629,7 +757,7 @@
             ...updatedChat,
             {
               role: 'assistant',
-              text: 'Para poder responderte y analizar tu Google Sheet o buscar en internet, por favor ingresa tu Gemini API Key tocando el botón de Ajustes (arriba a la derecha).'
+              text: 'Para poder responderte, analizar fotos o consultar tu Google Sheet, ingresa tu Gemini API Key tocando el botón de Ajustes (arriba a la derecha).'
             }
           ]);
           return;
@@ -648,10 +776,19 @@
             proximoMantenimientoMeta: '102,000 km',
             odometroActual: odometroActualVehiculo,
             kmRestantesPara102k: kmFaltantes102k,
+            telemetriaYAutonomia: {
+              rendimientoActualKmGal: rendimientoActualRef,
+              variacionRendimientoVsAnterior: (esMasEficiente ? '+' : '') + variacionRendPct + '%',
+              autonomiaTotalTanqueKm: autonomiaTotalTanqueKm,
+              autonomiaRestanteEstimadaKm: autonomiaRestanteKm,
+              diasRestantesAutonomia: diasRestantesAutonomia,
+              proximoDiaEstimadoTanqueo: nombreDiaProxTanqueo,
+              alertaDia12GasolinaSuper: mostrarAlertaDia12 ? textoAlertaDia12 : 'Precio vigente hasta el próximo día 12'
+            },
             rutinaConduccion: {
               rutaTrabajoDiariaIdaYVuelta: '38.4 km (La Joya a Arcos Plaza 2)',
               costoPorKmActual: Number(costoKmPromedio.toFixed(4)),
-              ahorroDiarioSiNoMueveElCarroAlTrabajo: Number((38.4 * costoKmPromedio).toFixed(2)),
+              ahorroDiarioSiNoMueveElCarroAlTrabajo: Number((DAILY_COMMUTE_KM * costoKmPromedio).toFixed(2)),
               promedioMensualKm: MONTHLY_AVG_KM
             },
             resumenFinanciero: {
@@ -676,20 +813,28 @@ ${JSON.stringify(contextoVehicular)}
 
 Reglas de comportamiento de Mathias:
 1. Tu nombre es Mathias (con "th"). Responde siempre en español con tono cercano, ejecutivo, claro y directo.
-2. Si pregunta sobre sus tanqueos, ahorro diario si no mueve el carro (38.4 km diarios = ~$7.93/día), gastos por tarjeta (Primax, Anthony, Efectivo), porcentaje de avance del presupuesto mensual, odómetro, rendimiento, alcancía o inventario de piezas, usa los datos exactos del JSON de arriba.
-3. Si pregunta sobre mecánica, ruidos, fallas, repuestos, llantas (215/60 R17), aceite (5W-30 sintético DEXOS1), plumas (24", 16", 10" J-Hook), normativas de tránsito en Ecuador (ATM, ATV Samborondón, SRI) o cualquier duda general, dale respuestas técnicas precisas adaptadas al motor 1.5 Turbo y al clima de Guayaquil.`;
+2. Si Anthony te envía una foto (por ejemplo, una cotización de llantas 215/60 R17, un repuesto, una factura o un testigo del tablero), analízala en detalle y dale tu recomendación experta técnica y financiera para Guayaquil.
+3. Si pregunta sobre sus tanqueos, autonomía restante (~${autonomiaRestanteKm} km), ahorro diario si no mueve el carro ($7.93/día), gastos por tarjeta (Primax, Anthony, Efectivo), porcentaje de avance del presupuesto mensual (${porcentajePresupuestoMes}%), odómetro, rendimiento, alcancía o inventario de piezas, usa los datos exactos del JSON de arriba.`;
 
-          const conversationHistory = updatedChat.slice(-8).map((m) => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.text }]
-          }));
+          const conversationHistory = updatedChat.slice(-8).map((m, idx, arr) => {
+            const msgParts = [{ text: m.text }];
+            if (m.image && idx === arr.length - 1) {
+              msgParts.push({
+                inline_data: { mime_type: 'image/jpeg', data: m.image.split(',')[1] }
+              });
+            }
+            return {
+              role: m.role === 'assistant' ? 'model' : 'user',
+              parts: msgParts
+            };
+          });
 
           const requestBody = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: conversationHistory
           };
 
-          if (useWebSearch) {
+          if (useWebSearch && !imageAttached) {
             requestBody.tools = [{ google_search: {} }];
           }
 
@@ -815,50 +960,6 @@ Reglas de comportamiento de Mathias:
         navigator.clipboard.writeText(texto);
         setCopiedText(etiqueta);
         setTimeout(() => setCopiedText(''), 2000);
-      };
-
-      const compressImage = (file) => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const MAX_SIZE = 1200;
-              let width = img.width;
-              let height = img.height;
-              if (width > height && width > MAX_SIZE) {
-                height *= MAX_SIZE / width;
-                width = MAX_SIZE;
-              } else if (height > MAX_SIZE) {
-                width *= MAX_SIZE / height;
-                height = MAX_SIZE;
-              }
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, width, height);
-              resolve(canvas.toDataURL('image/jpeg', 0.78));
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      };
-
-      const handleImageSelect = async (e, type) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-          const compressed = await compressImage(file);
-          if (type === 'invoice') setInvoiceImg(compressed);
-          else setDashImg(compressed);
-          setScanError('');
-        } catch (err) {
-          setScanError('No se pudo procesar la foto.');
-        }
       };
 
       const extractDataFromPhotos = async () => {
@@ -1147,18 +1248,28 @@ function doPost(e) {
             </div>
           </div>
 
-          {/* PLAQUETA DE INICIO (HERO CARD): TELEMETRÍA + PRESUPUESTO MENSUAL PROYECTADO Y % DE AVANCE */}
+          {/* PLAQUETA DE INICIO (HERO CARD): TELEMETRÍA, AUTONOMÍA, SEMÁFORO DE EFICIENCIA, PRESUPUESTO Y DÍA 12 */}
           <div className="hero-card rounded-3xl p-4 mb-4 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
+            {/* MEJORA 1: Alerta automática del Día 12 (Bandas Gasolina Súper en Ecuador) */}
+            {mostrarAlertaDia12 && (
+              <div className="mb-2.5 bg-[#181A2F]/80 border border-[#FDA481]/50 rounded-2xl px-3 py-1.5 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#FDA481]">{textoAlertaDia12}</span>
+                <span className="text-[9px] font-mono bg-[#B4182D] text-white px-1.5 py-0.5 rounded-md font-bold shrink-0 ml-1">
+                  DÍA 12
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#FDA481] bg-[#181A2F]/55 px-2.5 py-1 rounded-full border border-[#FDA481]/25">
-                ● Resumen Ejecutivo & Telemetría
+                ● Telemetría & Control Ejecutivo
               </span>
               <span className="text-[11px] text-white/80 font-mono">
-                {ultimoRegistro ? ultimoRegistro.fecha : '11/11/2026'}
+                {ultimoRegistro ? ultimoRegistro.fecha : '09/11/2026'}
               </span>
             </div>
 
-            {/* Fila Principal: Odómetro y Último Tanqueo */}
+            {/* Fila Principal: Odómetro, Último Tanqueo y Semáforo de Eficiencia */}
             <div className="flex items-baseline justify-between my-1">
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Odómetro Actual</p>
@@ -1168,14 +1279,42 @@ function doPost(e) {
               </div>
               <div className="text-right">
                 <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Último Tanqueo</p>
-                <p className="text-2xl font-extrabold text-[#FDA481] font-mono">
-                  ${ultimoRegistro ? toNum(ultimoRegistro.costoTotal).toFixed(2) : '56.77'}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span
+                    className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg border ${
+                      esMasEficiente
+                        ? 'bg-[#181A2F]/70 text-[#FDA481] border-[#FDA481]/40'
+                        : 'bg-[#B4182D]/80 text-white border-white/20'
+                    }`}
+                  >
+                    {rendimientoActualRef} km/g ({esMasEficiente ? '▲ +' : '▼ '}
+                    {variacionRendPct}%)
+                  </span>
+                  <p className="text-2xl font-extrabold text-[#FDA481] font-mono">
+                    ${ultimoRegistro ? toNum(ultimoRegistro.costoTotal).toFixed(2) : '56.77'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* MEJORA 2: Píldora de Autonomía Restante y Próximo Día de Tanqueo */}
+            <div className="grid grid-cols-2 gap-2 bg-[#181A2F]/60 rounded-2xl p-2.5 mt-2 border border-white/10">
+              <div>
+                <p className="text-[9px] uppercase tracking-wider text-white/60 font-bold">Autonomía Restante Est.</p>
+                <p className="text-xs font-extrabold text-white font-mono mt-0.5">
+                  ~{autonomiaRestanteKm} km <span className="text-[#FDA481] font-normal">({diasRestantesAutonomia} días)</span>
+                </p>
+              </div>
+              <div className="text-right border-l border-white/10 pl-2">
+                <p className="text-[9px] uppercase tracking-wider text-white/60 font-bold">Próximo Tanqueo Est.</p>
+                <p className="text-xs font-extrabold text-[#FDA481] mt-0.5">
+                  {nombreDiaProxTanqueo} <span className="text-[10px] text-white/75 font-mono">({galonesUltimoTanqueo.toFixed(1)}g)</span>
                 </p>
               </div>
             </div>
 
-            {/* Bloque Destacado: Presupuesto Mensual Proyectado y Barra de % de Avance */}
-            <div className="bg-[#181A2F]/70 backdrop-blur-md rounded-2xl p-3 mt-2.5 border border-white/15 space-y-2">
+            {/* Bloque de Presupuesto Mensual Proyectado y Barra de % de Avance */}
+            <div className="bg-[#181A2F]/75 backdrop-blur-md rounded-2xl p-3 mt-2 border border-white/15 space-y-1.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#FDA481]">
@@ -1185,14 +1324,11 @@ function doPost(e) {
                     Ejecutado: <span className="text-white font-bold">${gastoOperativoEjecutadoMes.toFixed(2)}</span> / ${presupuestoOperativoTotal.toFixed(2)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-extrabold font-mono text-[#FDA481] bg-[#54162B] px-2.5 py-1 rounded-xl border border-[#FDA481]/40">
-                    {porcentajePresupuestoMes}%
-                  </span>
-                </div>
+                <span className="text-sm font-extrabold font-mono text-[#FDA481] bg-[#54162B] px-2.5 py-1 rounded-xl border border-[#FDA481]/40">
+                  {porcentajePresupuestoMes}%
+                </span>
               </div>
 
-              {/* Barra de Progreso del Presupuesto Mensual */}
               <div className="w-full h-2.5 bg-[#181A2F] rounded-full overflow-hidden border border-white/10 p-0.5">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#FDA481] to-[#B4182D] transition-all duration-500"
@@ -1873,7 +2009,7 @@ function doPost(e) {
             </div>
           )}
 
-          {/* PESTAÑA 5: AGENTE VIRTUAL MATHIAS IA */}
+          {/* PESTAÑA 5: AGENTE VIRTUAL MATHIAS IA (CON CONSULTA VISUAL DE FOTOS) */}
           {activeTab === 'mathias' && (
             <div className="space-y-3">
               <div className="premium-card rounded-3xl p-4">
@@ -1886,11 +2022,11 @@ function doPost(e) {
                       <div className="flex items-center gap-2">
                         <h2 className="text-sm font-extrabold text-white">Mathias • Copiloto IA</h2>
                         <span className="text-[9px] font-bold bg-[#54162B] text-[#FDA481] border border-[#FDA481]/40 px-2 py-0.5 rounded-full">
-                          Gemini 3
+                          Gemini 3 + Vision
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-300">
-                        Conectado a tu Google Sheet, inventario y búsqueda web
+                        Conectado a tu Google Sheet, fotos de repuestos y web
                       </p>
                     </div>
                   </div>
@@ -1900,7 +2036,7 @@ function doPost(e) {
                         setMathiasMessages([
                           {
                             role: 'assistant',
-                            text: '¡Hola Anthony! Historial limpio. Soy Mathias y estoy conectado a tu Google Sheet y listo para cualquier consulta sobre tus consumos o sobre la mecánica de tu Captiva LT 1.5 Turbo.'
+                            text: '¡Hola Anthony! Historial limpio. Soy Mathias y estoy conectado a tu Google Sheet y listo para analizar fotos o dudas sobre tu Captiva LT 1.5 Turbo.'
                           }
                         ]);
                       }
@@ -1929,7 +2065,7 @@ function doPost(e) {
                 <div className="flex gap-1.5 overflow-x-auto pt-2.5 pb-1">
                   {[
                     'Si no muevo el carro mañana, ¿cuánto me ahorro en combustible?',
-                    '¿Cuánto he gastado en gasolina y cómo va mi presupuesto del mes?',
+                    '¿Cuánta autonomía me queda y cuándo me toca tanquear?',
                     '¿Qué marca de llantas 215/60 R17 me recomiendas en Guayaquil?',
                     '¿Qué toca revisar a los 102,000 km en mi Captiva 1.5 Turbo?'
                   ].map((q, idx) => (
@@ -1945,7 +2081,7 @@ function doPost(e) {
               </div>
 
               {/* Ventana de conversación con Mathias */}
-              <div className="premium-card rounded-3xl p-4 space-y-3 max-h-[52vh] overflow-y-auto">
+              <div className="premium-card rounded-3xl p-4 space-y-3 max-h-[50vh] overflow-y-auto">
                 {mathiasMessages.map((msg, i) => (
                   <div
                     key={i}
@@ -1963,6 +2099,13 @@ function doPost(e) {
                           MATHIAS IA
                         </p>
                       )}
+                      {msg.image && (
+                        <img
+                          src={msg.image}
+                          alt="Adjunto"
+                          className="h-32 w-full object-cover rounded-xl mb-2 border border-white/20"
+                        />
+                      )}
                       {msg.text}
                     </div>
                   </div>
@@ -1977,25 +2120,72 @@ function doPost(e) {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Barra de entrada para hablar con Mathias */}
-              <div className="premium-card rounded-2xl p-2 flex items-center gap-2">
+              {/* MEJORA 4: Barra de entrada con soporte de Cámara y Galería para enviarle fotos a Mathias */}
+              <div className="premium-card rounded-2xl p-2.5 space-y-2">
+                {mathiasImg && (
+                  <div className="flex items-center justify-between bg-[#181A2F] border border-[#FDA481]/40 rounded-xl p-2">
+                    <div className="flex items-center gap-2">
+                      <img src={mathiasImg} alt="Preview" className="w-10 h-10 rounded-lg object-cover" />
+                      <span className="text-[11px] text-[#FDA481] font-bold">Foto lista para analizar</span>
+                    </div>
+                    <button
+                      onClick={() => setMathiasImg(null)}
+                      className="text-xs text-slate-400 hover:text-white px-2 py-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 <input
-                  type="text"
-                  placeholder="Pregúntale a Mathias sobre tu Google Sheet o mecánica..."
-                  value={mathiasInput}
-                  onChange={(e) => setMathiasInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') askMathias();
-                  }}
-                  className="flex-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2.5 text-xs text-white"
+                  type="file"
+                  accept="image/*"
+                  ref={mathiasGalleryRef}
+                  className="hidden"
+                  onChange={(e) => handleImageSelect(e, 'mathias')}
                 />
-                <button
-                  onClick={() => askMathias()}
-                  disabled={isMathiasTyping}
-                  className="btn-sunset text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shrink-0"
-                >
-                  Enviar
-                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  ref={mathiasCamRef}
+                  className="hidden"
+                  onChange={(e) => handleImageSelect(e, 'mathias')}
+                />
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => mathiasGalleryRef.current.click()}
+                    title="Subir foto de Galería a Mathias"
+                    className="btn-slate text-[#FDA481] p-2.5 rounded-xl shrink-0"
+                  >
+                    <IconImage />
+                  </button>
+                  <button
+                    onClick={() => mathiasCamRef.current.click()}
+                    title="Tomar foto con Cámara para Mathias"
+                    className="btn-slate text-white p-2.5 rounded-xl shrink-0"
+                  >
+                    <IconCamera />
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Pregunta o envía una foto a Mathias..."
+                    value={mathiasInput}
+                    onChange={(e) => setMathiasInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') askMathias();
+                    }}
+                    className="flex-1 bg-[#181A2F] border border-[#37415C] focus:border-[#FDA481] outline-none rounded-xl px-3 py-2.5 text-xs text-white"
+                  />
+                  <button
+                    onClick={() => askMathias()}
+                    disabled={isMathiasTyping}
+                    className="btn-sunset text-white font-extrabold px-3.5 py-2.5 rounded-xl text-xs shrink-0"
+                  >
+                    Enviar
+                  </button>
+                </div>
               </div>
             </div>
           )}
